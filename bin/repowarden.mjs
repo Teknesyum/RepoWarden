@@ -145,26 +145,21 @@ function audit(r) {
   return f;
 }
 
-const TONE = { critical: "Worth doing first", high: "Recommended", medium: "Small improvement", low: "Nice to have" };
 const list = (a) => a.length < 2 ? a.join("") : `${a.slice(0, -1).join(", ")} and ${a.at(-1)}`;
 
-function issueBody(repo, findings, date) {
-  const items = findings.map((x) => `- [ ] **${TONE[x.sev]}** — ${x.text}${x.fix ? `\n\n  ${x.fix.replace(/\n/g, "\n  ")}\n` : ""}`);
-  const good = findings.good?.length
-    ? `**${repo}** is already in good shape on the outside: it has ${list(findings.good)}. 👍`
-    : `**${repo}** has a lot of room to shine on its GitHub page, and each step below takes a minute or two.`;
+function issueBody(repo, findings) {
+  const items = findings.map((x) => `- [ ] **Small improvement** — ${x.text}${x.fix ? `\n\n  ${x.fix.replace(/\n/g, "\n  ")}\n` : ""}`);
+  const has = findings.good?.length ? `\n\n**${repo}** already has ${list(findings.good)}.` : "";
   const n = findings.length;
-  return `Hi! I took a quick look at how **${repo}** presents itself on GitHub — the page a visitor sees before reading any code. The code itself was not reviewed.
+  return `Hi! A few suggestions for the GitHub page of **${repo}**; the code was not reviewed.${has}
 
-${good}
-
-${n === 1 ? "One small thing could" : `${n} small things could`} make it easier to find and reuse:
+${n === 1 ? "One small improvement" : `${n} small improvements`} could make it easier to find:
 
 ${items.join("\n")}
 
-These are only suggestions — keep what fits, change or skip the rest. The commands need the [GitHub CLI](https://cli.github.com) and run from any folder. Happy to help if anything is unclear.
+Only suggestions; keep what fits. The commands use the [GitHub CLI](https://cli.github.com).
 
-<sub>Checked on ${date} by [RepoWarden](https://github.com/Teknesyum/RepoWarden). This issue is updated on the next run and closes itself when nothing is left.</sub>`;
+<sub>Suggested by [RepoWarden](https://github.com/Teknesyum/RepoWarden).</sub>`;
 }
 
 function syncIssue(repo, findings, date) {
