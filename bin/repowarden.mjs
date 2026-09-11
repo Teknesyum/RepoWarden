@@ -149,8 +149,9 @@ Every suggestion is only a starting point; change or ignore whatever does not fi
 }
 
 function syncIssue(repo, findings, date) {
-  gh(["label", "create", rules.issueLabel, "-R", `${O}/${repo}`, "--color", "c67eff", "--force"], { json: false, raw: true });
-  const open = gh(["issue", "list", "-R", `${O}/${repo}`, "--label", rules.issueLabel, "--state", "open", "--json", "number"]) ?? [];
+  const labelled = gh(["label", "create", rules.issueLabel, "-R", `${O}/${repo}`, "--color", "c67eff", "--force"], { json: false, raw: true }) !== null;
+  const open = (gh(["issue", "list", "-R", `${O}/${repo}`, "--author", "@me", "--state", "open", "--search", `"${rules.issueTitle}" in:title`, "--json", "number,title"]) ?? [])
+    .filter((i) => i.title === rules.issueTitle);
   if (!findings.length) {
     for (const i of open) gh(["issue", "close", String(i.number), "-R", `${O}/${repo}`, "-c", "RepoWarden: nothing left."], { json: false });
     return open.length ? "closed" : "clean";
@@ -160,7 +161,7 @@ function syncIssue(repo, findings, date) {
     gh(["issue", "edit", String(open[0].number), "-R", `${O}/${repo}`, "--body", body], { json: false });
     return `updated #${open[0].number}`;
   }
-  const url = gh(["issue", "create", "-R", `${O}/${repo}`, "--title", rules.issueTitle, "--label", rules.issueLabel, "--body", body], { json: false }).trim();
+  const url = gh(["issue", "create", "-R", `${O}/${repo}`, "--title", rules.issueTitle, ...(labelled ? ["--label", rules.issueLabel] : []), "--body", body], { json: false }).trim();
   return `opened ${url.split("/").pop() ? "#" + url.split("/").pop() : url}`;
 }
 
