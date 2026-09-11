@@ -1,0 +1,16 @@
+{
+  "owner": "Teknesyum",
+  "skip": [".github"],
+  "includePrivate": false,
+  "includeArchived": false,
+  "minTopics": 3,
+  "license": "AGPL-3.0",
+  "defaultBranch": "main",
+  "readme": {
+    "markers": ["<!-- lang -->", "<!-- signature -->"],
+    "twin": "README.tr.md",
+    "mermaid": true
+  },
+  "issueLabel": "repowarden",
+  "issueTitle": "RepoWarden: Audit Findings"
+}

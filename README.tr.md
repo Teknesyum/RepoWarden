@@ -39,8 +39,8 @@ Yapmadığı şey şu: on dört release'e bakıp hepsinin taslak olduğunu görm
 ## Yapmadıkları
 
 - Kaynak kodunu okumaz. Lint yok, bağımlılık denetimi yok, güvenlik açığı taraması yok.
-- Kendi başına koşmaz. Bilerek: ne zamanlanmış görev var ne de bot hesabı.
-- Henüz kurulum betiği yok. İkili dosya değil, `gh` üzerinde yürüyen bir yordam.
+- Yıkıcı komut koşmaz. Bulgular silme değil, issue olur.
+- `rules.json` söylemedikçe özel depoları denetlemez.
 - Projenin iyi olup olmadığını söyleyemez. Yalnız yayımladığın şeyin iddia ettiğin şeye uyup uymadığına bakar.
 
 ## Gerekenler
@@ -49,7 +49,15 @@ Yapmadığı şey şu: on dört release'e bakıp hepsinin taslak olduğunu görm
 gh auth status
 ```
 
-GitHub CLI, oturum açılmış. Taramak için okuma yetkisi yeter; düzeltmek için yazma yetkisi gerekir.
+GitHub CLI, oturum açılmış, ve Node.js 18 ya da üstü. Taramak için okuma yetkisi yeter; issue açmak için yazma yetkisi gerekir.
+
+## Çalıştır
+
+```bash
+node bin/repowarden.mjs
+```
+
+Kuru koşum: raporu basar ve `reports/audit-<tarih>.md` dosyasına yazar. `--issues` eklersen her depoya `repowarden` etiketli bir issue açar. Sonraki koşum aynı issue'yu günceller, iş kalmayınca kapatır. `--repo <ad>` tek depoyu denetler. Kurallar `rules.json` içinde.
 
 ## Nasıl Çalışır
 

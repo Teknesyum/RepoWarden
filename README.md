@@ -39,8 +39,8 @@ What it will not do is look at fourteen releases, notice every single one is a d
 ## What It Does Not Do
 
 - It does not read your source code. No linting, no dependency audit, no vulnerability scan.
-- It does not run unattended. There is no cron mode and no bot account, on purpose.
-- It has no installer yet. It runs as a procedure over `gh`, not a binary.
+- It never runs a destructive command. Findings become issues, not deletions.
+- It does not audit private repositories unless `rules.json` says so.
 - It cannot tell you whether your project is any good. It only checks that what you published matches what you claimed.
 
 ## Requirements
@@ -49,7 +49,15 @@ What it will not do is look at fourteen releases, notice every single one is a d
 gh auth status
 ```
 
-GitHub CLI, authenticated. Read access is enough to scan. Write access is needed to fix.
+GitHub CLI, authenticated, and Node.js 18 or newer. Read access is enough to scan. Write access is needed to open issues.
+
+## Run It
+
+```bash
+node bin/repowarden.mjs
+```
+
+A dry run: it prints the report and writes it to `reports/audit-<date>.md`. Add `--issues` to open one issue per repository, labelled `repowarden`. The next run edits that issue, and closes it once nothing is left. `--repo <name>` audits one repository. The checks live in `rules.json`.
 
 ## How It Works
 
