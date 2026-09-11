@@ -168,7 +168,7 @@ const date = new Date().toISOString().slice(0, 10);
 const only = opt("--repo");
 let repos = gh(["repo", "list", O, "--limit", "200", "--json", "name,isArchived,isPrivate,isFork,description,defaultBranchRef,repositoryTopics,licenseInfo"]);
 repos = repos.filter((r) =>
-  !rules.skip.includes(r.name) && !r.isFork &&
+  !rules.skip.includes(r.name) && (!r.isFork || only) &&
   (rules.includeArchived || !r.isArchived) &&
   (rules.includePrivate || !r.isPrivate) &&
   (!only || r.name === only));
