@@ -106,7 +106,7 @@ function audit(r) {
   }
   if (topics.length < rules.minTopics) {
     const s = suggestTopics(r, pkg, tree, topics);
-    add("medium", `${topics.length ? `Only ${topics.length} topic(s)` : "No topics"}; at least ${rules.minTopics} help people find the repository.`,
+    add("medium", `${topics.length ? `A few more topics (it has ${topics.length})` : "A few topics"} would put it in GitHub search and topic pages, where people browse for projects like this.`,
       s.length ? `Suggested from the languages and files in the repository — keep the ones that fit:\n\`\`\`bash\ngh repo edit ${R} ${s.map((t) => `--add-topic ${t}`).join(" ")}\n\`\`\``
         : `\`\`\`bash\ngh repo edit ${R} --add-topic <topic>\n\`\`\``);
   }
@@ -134,16 +134,35 @@ function audit(r) {
   const bare = tags.filter((t) => !pub.has(t.name) && /^v?\d/.test(t.name));
   if (rel.length && bare.length) add("low", `Version tag(s) without a published release: ${bare.slice(0, 5).map((t) => `\`${t.name}\``).join(", ")}${bare.length > 5 ? " …" : ""}.`);
 
-  return f.sort((a, b) => SEV[a.sev] - SEV[b.sev]);
+  f.sort((a, b) => SEV[a.sev] - SEV[b.sev]);
+  f.good = [
+    r.description && "a clear description",
+    topics.length >= rules.minTopics && "topics",
+    r.licenseInfo && `a license (${r.licenseInfo.name ?? r.licenseInfo.key})`,
+    readme && "a README",
+    rel.some((x) => !x.draft) && "published releases",
+  ].filter(Boolean);
+  return f;
 }
 
+const TONE = { critical: "Worth doing first", high: "Recommended", medium: "Small improvement", low: "Nice to have" };
+const list = (a) => a.length < 2 ? a.join("") : `${a.slice(0, -1).join(", ")} and ${a.at(-1)}`;
+
 function issueBody(repo, findings, date) {
-  const items = findings.map((x) => `- [ ] **${x.sev}** — ${x.text}${x.fix ? `\n\n  ${x.fix.replace(/\n/g, "\n  ")}\n` : ""}`);
-  return `Hi! This is a quick outside-in check of how **${repo}** looks on GitHub — description, topics, license, README and releases. It does not look at the code.
+  const items = findings.map((x) => `- [ ] **${TONE[x.sev]}** — ${x.text}${x.fix ? `\n\n  ${x.fix.replace(/\n/g, "\n  ")}\n` : ""}`);
+  const good = findings.good?.length
+    ? `**${repo}** is already in good shape on the outside: it has ${list(findings.good)}. 👍`
+    : `**${repo}** has a lot of room to shine on its GitHub page, and each step below takes a minute or two.`;
+  const n = findings.length;
+  return `Hi! I took a quick look at how **${repo}** presents itself on GitHub — the page a visitor sees before reading any code. The code itself was not reviewed.
+
+${good}
+
+${n === 1 ? "One small thing could" : `${n} small things could`} make it easier to find and reuse:
 
 ${items.join("\n")}
 
-Every suggestion is only a starting point; change or ignore whatever does not fit. The commands need the [GitHub CLI](https://cli.github.com) and run from any folder.
+These are only suggestions — keep what fits, change or skip the rest. The commands need the [GitHub CLI](https://cli.github.com) and run from any folder. Happy to help if anything is unclear.
 
 <sub>Checked on ${date} by [RepoWarden](https://github.com/Teknesyum/RepoWarden). This issue is updated on the next run and closes itself when nothing is left.</sub>`;
 }
