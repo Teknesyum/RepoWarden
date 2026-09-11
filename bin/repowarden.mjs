@@ -151,7 +151,8 @@ function issueBody(repo, findings) {
   const items = findings.map((x) => `- [ ] **Small improvement** — ${x.text}${x.fix ? `\n\n  ${x.fix.replace(/\n/g, "\n  ")}\n` : ""}`);
   const has = findings.good?.length ? `\n\n**${repo}** already has ${list(findings.good)}.` : "";
   const n = findings.length;
-  return `Hi! A few suggestions for the GitHub page of **${repo}**; the code was not reviewed.${has}
+  return `<!-- repowarden -->
+Hi! A few suggestions for the GitHub page of **${repo}**; the code was not reviewed.${has}
 
 ${n === 1 ? "One small improvement" : `${n} small improvements`} could make it easier to find:
 
@@ -164,8 +165,10 @@ Only suggestions; keep what fits. The commands use the [GitHub CLI](https://cli.
 
 function syncIssue(repo, findings, date) {
   const labelled = gh(["label", "create", rules.issueLabel, "-R", `${O}/${repo}`, "--color", "c67eff", "--force"], { json: false, raw: true }) !== null;
-  const open = (gh(["issue", "list", "-R", `${O}/${repo}`, "--author", "@me", "--state", "open", "--search", `"${rules.issueTitle}" in:title`, "--json", "number,title"]) ?? [])
-    .filter((i) => i.title === rules.issueTitle);
+  const open = (gh(["issue", "list", "-R", `${O}/${repo}`, "--author", "@me", "--state", "open", "--json", "number,title,body"]) ?? [])
+    .filter((i) => i.title === rules.issueTitle || i.body.includes("<!-- repowarden"));
+  const review = open.find((i) => i.body.includes("<!-- repowarden:review -->"));
+  if (review) return `kept review #${review.number}`;
   if (!findings.length) {
     for (const i of open) gh(["issue", "close", String(i.number), "-R", `${O}/${repo}`, "-c", "RepoWarden: nothing left."], { json: false });
     return open.length ? "closed" : "clean";

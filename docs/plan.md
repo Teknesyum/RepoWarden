@@ -66,6 +66,8 @@ Sıra:
 - [ ] A3. `--fix`: yıkıcı olmayanlar — topic ekleme (`rules.json` içinde depo başına liste), açıklama.
 - [ ] A4. Denetim notu: her koşumun raporu RepoWarden'da `reports/` (gitignore, private adlar sızmaz).
 - [ ] A5. Zamanlama: GitHub Actions haftalık `--issues`. Token gerekir; sahibin kararı.
+- [x] A7. Uzman incelemesi: `prompts/review.md` — depo başına bütçeli (≤200 KB metin, kod yalnız iddia doğrulamak için), sahibin dilinde, `n/N` numaralı, hazır komutlu issue. İlk örnek: srknzl/Webband#88. Tarayıcı `<!-- repowarden:review -->` taşıyan issue'yu ezmez.
+- [ ] A8. İncelemeyi `bin/repowarden.mjs --review <repo>` ile ajana bağlamak (fable 005).
 - [ ] A6. Ek kontroller: CHANGELOG sürümü ↔ son tag, kurulum komutundaki URL 404 mü, göreli bağlantı 404 mü.
 
 ## Kapsam Dışı
