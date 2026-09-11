@@ -1,0 +1,16 @@
+{
+  "owner": null,
+  "skip": [".github"],
+  "includePrivate": false,
+  "includeArchived": false,
+  "minTopics": 3,
+  "license": null,
+  "defaultBranch": null,
+  "readme": {
+    "markers": [],
+    "twin": null,
+    "mermaid": false
+  },
+  "issueLabel": "repowarden",
+  "issueTitle": "RepoWarden: Audit Findings"
+}

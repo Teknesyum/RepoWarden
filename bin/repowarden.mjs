@@ -18,7 +18,8 @@ Usage:
   node bin/repowarden.mjs --repo X   audit a single repository
 
 Options:
-  --rules FILE   rules file (default: rules.json)
+  --owner LOGIN  account to audit (default: owner in the rules file)
+  --rules FILE   rules file (default: rules.json; rules.generic.json for other accounts)
   --out FILE     report path (default: reports/audit-<date>.md)
 
 Nothing destructive is ever run. Findings become issues, not changes.`);
@@ -26,7 +27,8 @@ Nothing destructive is ever run. Findings become issues, not changes.`);
 }
 
 const rules = JSON.parse(readFileSync(opt("--rules") ?? join(root, "rules.json"), "utf8"));
-const O = rules.owner;
+const O = opt("--owner") ?? rules.owner;
+if (!O) { console.error("No owner: pass --owner <login> or set it in the rules file."); process.exit(1); }
 
 function gh(a, { json = true, raw = false } = {}) {
   try {
@@ -51,12 +53,13 @@ function audit(r) {
   const topics = (r.repositoryTopics ?? []).map((t) => t.name ?? t.topic?.name).filter(Boolean);
 
   if (r.isPrivate) return f;
+  if (r.name.toLowerCase() === O.toLowerCase()) return f;
   if (!r.description) add("medium", "No repository description.");
   if (topics.length < rules.minTopics) add("medium", `Only ${topics.length} topic(s); at least ${rules.minTopics} expected.`);
   if (!r.licenseInfo) add("high", "No license detected.");
-  else if (!String(r.licenseInfo.key ?? "").toUpperCase().startsWith(rules.license)) add("low", `License is ${r.licenseInfo.key}, expected ${rules.license}.`);
+  else if (rules.license && !String(r.licenseInfo.key ?? "").toUpperCase().startsWith(rules.license)) add("low", `License is ${r.licenseInfo.key}, expected ${rules.license}.`);
   const branch = r.defaultBranchRef?.name;
-  if (branch && branch !== rules.defaultBranch) add("low", `Default branch is \`${branch}\`, expected \`${rules.defaultBranch}\`.`);
+  if (rules.defaultBranch && branch && branch !== rules.defaultBranch) add("low", `Default branch is \`${branch}\`, expected \`${rules.defaultBranch}\`.`);
 
   const readme = file(r.name, "README.md");
   if (!readme) add("high", "No README.md.");
@@ -120,7 +123,10 @@ for (const r of repos) {
 }
 
 const count = (s) => rows.filter((x) => x.split("|")[2].trim() === s).length;
-const report = `# RepoWarden Audit — ${date}
+const total = rows.reduce((n, x) => n + Number(x.split("|")[3]), 0);
+const report = `# RepoWarden Audit — ${O} — ${date}
+
+${repos.length} repositories audited, ${total} findings in ${repos.length - count("ok")} of them.
 
 | Repositories | Critical | High | Medium | Low | Clean |
 |---|---|---|---|---|---|
@@ -133,7 +139,7 @@ ${rows.join("\n")}
 ${detail.join("\n\n")}
 `;
 
-const out = opt("--out") ?? join(root, "reports", `audit-${date}.md`);
+const out = opt("--out") ?? join(root, "reports", `audit-${O}-${date}.md`);
 mkdirSync(dirname(out), { recursive: true });
 writeFileSync(out, report);
 console.log(report);
