@@ -5,14 +5,17 @@
       <stop offset="0.5" stop-color="#b68fff"/>
       <stop offset="1" stop-color="#de7ef1"/>
     </linearGradient>
+    <linearGradient id="dolgu" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#4da6ff"/>
+      <stop offset="1" stop-color="#b68fff"/>
+    </linearGradient>
   </defs>
   <rect x="48" y="48" width="928" height="928" rx="208" fill="#000000"/>
   <rect x="64" y="64" width="896" height="896" rx="192" fill="none" stroke="url(#kenar)" stroke-width="16" opacity="0.55"/>
-  <g stroke-linecap="round" stroke-linejoin="round" fill="none" stroke-width="60">
-    <path d="M512 200 L776 296 V500 C776 660 664 766 512 830 C360 766 248 660 248 500 V296 Z" stroke="#4da6ff"/>
-    <circle cx="400" cy="430" r="44" fill="#b68fff" stroke="#b68fff"/>
-    <circle cx="400" cy="640" r="44" fill="#b68fff" stroke="#b68fff"/>
-    <line x1="400" y1="474" x2="400" y2="596" stroke="#b68fff"/>
-    <polyline points="508,540 574,606 680,470" stroke="#de7ef1"/>
+  <path d="M512 188 C600 234 690 260 780 268 V500 C780 668 664 774 512 838 C360 774 244 668 244 500 V268 C334 260 424 234 512 188 Z" fill="url(#dolgu)" stroke="url(#dolgu)" stroke-width="56" stroke-linejoin="round"/>
+  <g stroke-linecap="round" stroke-linejoin="round" fill="none">
+    <path d="M432 440 V474 C432 530 512 530 512 574 V600 M592 440 V474 C592 530 512 530 512 574" stroke="#000000" stroke-width="48"/>
+    <circle cx="432" cy="400" r="46" fill="#000000"/><circle cx="592" cy="400" r="46" fill="#000000"/>
+    <circle cx="512" cy="644" r="50" fill="#000000"/>
   </g>
 </svg>
