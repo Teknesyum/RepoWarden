@@ -2,3 +2,5 @@ trash/
 kanit/
 reports/
 .claude/
+dist/
+tmp/

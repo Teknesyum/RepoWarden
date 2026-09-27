@@ -59,6 +59,8 @@ node bin/repowarden.mjs
 
 Kuru koşum: raporu basar ve `reports/audit-<tarih>.md` dosyasına yazar. `--issues` eklersen her depoya `repowarden` etiketli bir issue açar. Sonraki koşum aynı issue'yu günceller, iş kalmayınca kapatır. `--repo <ad>` tek depoyu denetler. Kurallar `rules.json` içinde.
 
+Windows'ta [Teknesyum Base](https://github.com/Teknesyum/Teknesyum-Base) üzerinden de kurulur: sürüm zip'i `repowarden.cmd` taşır, PATH'te Node.js ister. Terminalde önem dereceleri Teknesyum tema token'larından renklenir; düz metin için `NO_COLOR` ver ya da çıktıyı yönlendir.
+
 ## Nasıl Çalışır
 
 Beş adım. Her biri arkasında bir dosya bırakır, yani hangisinden sonra durursan dur elinde bir şey kalır.

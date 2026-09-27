@@ -1,0 +1,8 @@
+{
+  "name": "RepoWarden",
+  "category": "developer",
+  "asset": "RepoWarden-*-win.zip",
+  "method": "zip",
+  "run": "repowarden.cmd",
+  "icon": "assets/icon/icon-256.png"
+}

@@ -1,0 +1,115 @@
+AbxPilot: 1
+CodeXRay: 0
+Ghostlist: 3
+Gothic-1-Remake-Picklocker: 1
+HeadsetBatteryTray: 1
+ProcWitness: 4
+Quizloop: 2
+Reclatch: 1
+RepoWarden: 1
+Runly: 2
+Teknesyum: 0
+Teknesyum-Base: 2
+Teknesyum-Core: 0
+Teknesyum-UI: 2
+Usb-Guard: 1
+VidShrink: 1
+Webband: 5
+]0;RepoWarden[38;2;77;166;255m# RepoWarden Audit — Teknesyum — 2026-09-27[39m
+
+17 repositories audited, 27 findings in 14 of them.
+
+| Repositories | Critical | High | Medium | Low | Clean |
+|---|---|---|---|---|---|
+| 17 | 0 | 1 | 8 | 5 | 3 |
+
+| Repository | Worst | Findings | Issue |
+|---|---|---|---|
+| AbxPilot | [38;2;77;166;255mmedium[39m | 1 | — |
+| CodeXRay | [38;2;102;240;154mok[39m | 0 | — |
+| Ghostlist | [38;2;77;166;255mmedium[39m | 3 | — |
+| Gothic-1-Remake-Picklocker | [38;2;255;255;255mlow[39m | 1 | — |
+| HeadsetBatteryTray | [38;2;255;255;255mlow[39m | 1 | — |
+| ProcWitness | [38;2;77;166;255mmedium[39m | 4 | — |
+| Quizloop | [38;2;77;166;255mmedium[39m | 2 | — |
+| Reclatch | [38;2;255;210;77mhigh[39m | 1 | — |
+| RepoWarden | [38;2;255;255;255mlow[39m | 1 | — |
+| Runly | [38;2;77;166;255mmedium[39m | 2 | — |
+| Teknesyum | [38;2;102;240;154mok[39m | 0 | — |
+| Teknesyum-Base | [38;2;77;166;255mmedium[39m | 2 | — |
+| Teknesyum-Core | [38;2;102;240;154mok[39m | 0 | — |
+| Teknesyum-UI | [38;2;77;166;255mmedium[39m | 2 | — |
+| Usb-Guard | [38;2;255;255;255mlow[39m | 1 | — |
+| VidShrink | [38;2;255;255;255mlow[39m | 1 | — |
+| Webband | [38;2;77;166;255mmedium[39m | 5 | — |
+
+[38;2;77;166;255m### AbxPilot[39m
+
+- [38;2;77;166;255mmedium[39m — A few topics would put it in GitHub search and topic pages, where people browse for projects like this.
+
+[38;2;77;166;255m### Ghostlist[39m
+
+- [38;2;77;166;255mmedium[39m — README lacks the `<!-- lang -->` block.
+- [38;2;77;166;255mmedium[39m — No README.tr.md twin.
+- [38;2;255;255;255mlow[39m — README has no mermaid diagram.
+
+[38;2;77;166;255m### Gothic-1-Remake-Picklocker[39m
+
+- [38;2;255;255;255mlow[39m — Default branch is `master`, expected `main`.
+
+[38;2;77;166;255m### HeadsetBatteryTray[39m
+
+- [38;2;255;255;255mlow[39m — README has no mermaid diagram.
+
+[38;2;77;166;255m### ProcWitness[39m
+
+- [38;2;77;166;255mmedium[39m — README lacks the `<!-- lang -->` block.
+report: tmp/r.md
+- [38;2;77;166;255mmedium[39m — No README.tr.md twin.
+- [38;2;255;255;255mlow[39m — README has no mermaid diagram.
+- [38;2;255;255;255mlow[39m — Version tag(s) without a published release: `v0.4.1`, `v0.4.0`, `v0.3.8`, `v0.3.7`, `v0.3.6` ….
+
+[38;2;77;166;255m### Quizloop[39m
+
+- [38;2;77;166;255mmedium[39m — README lacks the `<!-- signature -->` block.
+- [38;2;255;255;255mlow[39m — README has no mermaid diagram.
+
+[38;2;77;166;255m### Reclatch[39m
+
+- [38;2;255;210;77mhigh[39m — No README. It is the first thing a visitor sees.
+
+[38;2;77;166;255m### RepoWarden[39m
+
+- [38;2;255;255;255mlow[39m — README has no mermaid diagram.
+
+[38;2;77;166;255m### Runly[39m
+
+- [38;2;77;166;255mmedium[39m — README lacks the `<!-- lang -->` block.
+- [38;2;77;166;255mmedium[39m — README lacks the `<!-- signature -->` block.
+
+[38;2;77;166;255m### Teknesyum-Base[39m
+
+- [38;2;77;166;255mmedium[39m — A few topics would put it in GitHub search and topic pages, where people browse for projects like this.
+- [38;2;255;255;255mlow[39m — README has no mermaid diagram.
+
+[38;2;77;166;255m### Teknesyum-UI[39m
+
+- [38;2;77;166;255mmedium[39m — README lacks the `<!-- signature -->` block.
+- [38;2;255;255;255mlow[39m — Version tag(s) without a published release: `v0.14.0`, `v0.13.0`, `v0.11.0`, `v0.10.1`, `v0.10.0` ….
+
+[38;2;77;166;255m### Usb-Guard[39m
+
+- [38;2;255;255;255mlow[39m — README has no mermaid diagram.
+
+[38;2;77;166;255m### VidShrink[39m
+
+- [38;2;255;255;255mlow[39m — Version tag(s) without a published release: `v0.8.0`, `v0.7.3`, `v0.7.2`, `v0.7.0`.
+
+[38;2;77;166;255m### Webband[39m
+
+- [38;2;77;166;255mmedium[39m — A few topics would put it in GitHub search and topic pages, where people browse for projects like this.
+- [38;2;77;166;255mmedium[39m — README lacks the `<!-- lang -->` block.
+- [38;2;77;166;255mmedium[39m — README lacks the `<!-- signature -->` block.
+- [38;2;77;166;255mmedium[39m — No README.tr.md twin.
+- [38;2;255;255;255mlow[39m — README has no mermaid diagram.
+

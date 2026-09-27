@@ -59,6 +59,8 @@ node bin/repowarden.mjs
 
 A dry run: it prints the report and writes it to `reports/audit-<date>.md`. Add `--issues` to open one issue per repository, labelled `repowarden`. The next run edits that issue, and closes it once nothing is left. `--repo <name>` audits one repository. The checks live in `rules.json`.
 
+On Windows it also installs from [Teknesyum Base](https://github.com/Teknesyum/Teknesyum-Base): the release zip carries `repowarden.cmd`, which needs Node.js on the PATH. In a terminal, severities are coloured from the Teknesyum theme tokens; set `NO_COLOR` or pipe the output for plain text.
+
 ## How It Works
 
 Five steps. Each one leaves a file behind, so you can stop after any of them and still have something.

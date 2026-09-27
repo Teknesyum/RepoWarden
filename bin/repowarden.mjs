@@ -3,21 +3,25 @@ import { execFileSync } from "node:child_process";
 import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { tema } from "./tema.mjs";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const args = process.argv.slice(2);
 const flag = (n) => args.includes(n);
 const opt = (n) => { const i = args.indexOf(n); return i >= 0 ? args[i + 1] : undefined; };
+const c = tema(root);
+const e = tema(root, process.stderr);
+c.setTitle();
 
 if (flag("--help") || flag("-h")) {
-  console.log(`repowarden — audit every repository on a GitHub account
+  console.log(`${c.heading(c.title)} — audit every repository on a GitHub account
 
-Usage:
+${c.label("Usage:")}
   node bin/repowarden.mjs            dry run, prints the report
   node bin/repowarden.mjs --issues   also opens or updates one issue per repo
   node bin/repowarden.mjs --repo X   audit a single repository
 
-Options:
+${c.label("Options:")}
   --owner LOGIN  account to audit (default: owner in the rules file)
   --rules FILE   rules file (default: rules.json; rules.generic.json for other accounts)
   --out FILE     report path (default: reports/audit-<date>.md)
@@ -28,7 +32,7 @@ Nothing destructive is ever run. Findings become issues, not changes.`);
 
 const rules = JSON.parse(readFileSync(opt("--rules") ?? join(root, "rules.json"), "utf8"));
 const O = opt("--owner") ?? rules.owner;
-if (!O) { console.error("No owner: pass --owner <login> or set it in the rules file."); process.exit(1); }
+if (!O) { console.error(e.danger("No owner: pass --owner <login> or set it in the rules file.")); process.exit(1); }
 
 function gh(a, { json = true, raw = false } = {}) {
   try {
@@ -164,7 +168,7 @@ Only suggestions; keep what fits. The commands use the [GitHub CLI](https://cli.
 }
 
 function syncIssue(repo, findings, date) {
-  const labelled = gh(["label", "create", rules.issueLabel, "-R", `${O}/${repo}`, "--color", "c67eff", "--force"], { json: false, raw: true }) !== null;
+  const labelled = gh(["label", "create", rules.issueLabel, "-R", `${O}/${repo}`, "--color", c.hex("renk-3"), "--force"], { json: false, raw: true }) !== null;
   const open = (gh(["issue", "list", "-R", `${O}/${repo}`, "--author", "@me", "--state", "open", "--json", "number,title,body"]) ?? [])
     .filter((i) => i.title === rules.issueTitle || i.body.includes("<!-- repowarden"));
   const review = open.find((i) => i.body.includes("<!-- repowarden:review -->"));
@@ -205,7 +209,7 @@ for (const r of repos) {
   }
   rows.push(`| ${r.name}${r.isPrivate ? " 🔒" : ""} | ${worst} | ${f.length} | ${action} |`);
   if (f.length) detail.push(`### ${r.name}\n\n${f.map((x) => `- **${x.sev}** — ${x.text}`).join("\n")}`);
-  process.stderr.write(`${r.name}: ${f.length}\n`);
+  process.stderr.write(`${r.name}: ${e.sev[worst](f.length)}\n`);
 }
 
 const count = (s) => rows.filter((x) => x.split("|")[2].trim() === s).length;
@@ -228,5 +232,7 @@ ${detail.join("\n\n")}
 const out = opt("--out") ?? join(root, "reports", `audit-${O}-${date}.md`);
 mkdirSync(dirname(out), { recursive: true });
 writeFileSync(out, report);
-console.log(report);
-console.error(`report: ${out}`);
+const paintRow = (l) => l.replace(/^\| ([^|]+) \| (critical|high|medium|low|ok) \|/, (m, n, w) => `| ${n} | ${c.sev[w](w)} |`);
+const paintItem = (l) => l.replace(/^- \*\*(critical|high|medium|low)\*\*/, (m, w) => `- ${c.sev[w](w)}`);
+console.log(report.split("\n").map((l) => /^#/.test(l) ? c.heading(l) : paintItem(paintRow(l))).join("\n"));
+console.error(e.success(`report: ${out}`));
