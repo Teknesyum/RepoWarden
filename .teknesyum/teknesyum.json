@@ -1,0 +1,83 @@
+{
+  "name": "RepoWarden",
+  "category": "developer",
+  "asset": "RepoWarden-*-win.zip",
+  "method": "zip",
+  "run": "repowarden.cmd",
+  "icon": "assets/icon/icon-256.png",
+  "catalog": {
+    "category": "developer",
+    "tags": {
+      "tr": [
+        "github",
+        "denetim",
+        "sürüm",
+        "cli"
+      ],
+      "en": [
+        "github",
+        "audit",
+        "releases",
+        "cli"
+      ]
+    },
+    "summary": {
+      "tr": "Bir GitHub hesabındaki bütün depoları gh api ile okuyup yayın katmanındaki bozuklukları bulan bir denetim aracı. Kodu değil çevresini inceler: sürümler, README, lisans, konular, dal adları ve GitHub'ın beklediği dosyalar. Farklı yerlerdeki sürüm numaralarını karşılaştırır, çalışmayan kurulum bağlantılarını ve kırık göreli linkleri yakalar. Bulguları önem sırasına göre raporlar, her birine düzelten komutu ekler, istenirse depo başına bir issue açar. Yıkıcı hiçbir işlemi kendisi yapmaz. Node.js ile çalışan bir komut satırı aracı.",
+      "en": "An audit tool that reads every repository in a GitHub account through gh api and finds what is broken in the publishing layer. It looks at releases, README, licence, topics, branch names and the files GitHub expects, not at the code. It cross-checks version numbers kept in different places and catches dead install links and broken relative links. Findings are grouped by severity, each with the command that fixes it, and it can open one issue per repository. It never runs a destructive command. A Node.js command-line tool."
+    },
+    "points": {
+      "tr": [
+        "Hesaptaki tüm depoları tek geçişte tarar",
+        "Ham gh api çıktısını kanıt olarak saklar",
+        "Bulguları önem derecesine göre sıralar",
+        "Sürüm tutarsızlıklarını çapraz kontrol eder",
+        "Belgeleri belge olarak okur, kırık bağlantı bulur",
+        ".github deposu eksikliği gibi hesap düzeyi kontrol",
+        "Depo başına kopyala-yapıştır düzeltme promptu",
+        "Her depoya denetim notu bırakır",
+        "Yıkıcı işlemleri uygulamadan onaya sunar",
+        "Kuru koşum ve rapor dosyası üretir",
+        "--issues ile depo başına issue açar ve günceller",
+        "--repo ile tek depo denetimi",
+        "Kurallar rules.json ile özelleştirilir",
+        "İngilizce ve Türkçe rapor çıktısı"
+      ],
+      "en": [
+        "Scans every repository in the account in one pass",
+        "Keeps raw gh api output as evidence",
+        "Groups findings by severity",
+        "Cross-checks version numbers across sources",
+        "Reads documents as documents, finds broken links",
+        "Account-level checks like a missing .github repo",
+        "Copy-paste fix prompt per repository",
+        "Leaves an audit note in each repository",
+        "Queues destructive actions for approval, never runs them",
+        "Dry run prints and writes a report file",
+        "--issues opens and updates one issue per repository",
+        "--repo audits a single repository",
+        "Rules customizable via rules.json",
+        "English and Turkish report output"
+      ]
+    },
+    "uses": {
+      "tr": [
+        "Tüm depolarını tek geçişte denetle",
+        "Tutarsız sürümleri ve kırık bağlantıları bul",
+        "Bulguları önem sırasıyla gör",
+        "Hazır düzeltme istemini kopyala",
+        "Depo başına issue aç"
+      ],
+      "en": [
+        "Audit all your repos at once",
+        "Catch version mismatches and broken links",
+        "See findings ranked by severity",
+        "Copy a ready-made fix prompt",
+        "Open an issue per repo"
+      ]
+    },
+    "lead": {
+      "tr": "GitHub Hesabı Yayın Denetçisi ve Düzeltme İstemi Üretici",
+      "en": "GitHub Account Publishing Auditor and Fix Prompt Generator"
+    }
+  }
+}
