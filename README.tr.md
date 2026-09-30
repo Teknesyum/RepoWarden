@@ -43,6 +43,17 @@ Yapmadığı şey şu: on dört release'e bakıp hepsinin taslak olduğunu görm
 - `rules.json` söylemedikçe özel depoları denetlemez.
 - Projenin iyi olup olmadığını söyleyemez. Yalnız yayımladığın şeyin iddia ettiğin şeye uyup uymadığına bakar.
 
+## Kurulum
+
+**Önerilen: Teknesyum Base (Windows).**
+
+1. [`Teknesyum-Base.exe`](https://github.com/Teknesyum/Teknesyum-Base/releases/latest/download/Teknesyum-Base.exe) dosyasını ([`.sha256`](https://github.com/Teknesyum/Teknesyum-Base/releases/latest/download/Teknesyum-Base.exe.sha256)) indirip çalıştırın. Yönetici hakkı gerekmez.
+2. Listeden **RepoWarden** uygulamasını bulup kurun. Base sonradan güncellemeyi ve kaldırmayı da yapar.
+
+Base henüz imzalı değil; Windows SmartScreen ilk açılışta uyarabilir: *Diğer bilgiler*'i, sonra *Yine de çalıştır*'ı seçin. Ayrıntı: [Teknesyum Base](https://github.com/Teknesyum/Teknesyum-Base).
+
+**Ya da kaynaktan çalıştırın (GitHub CLI ve Node.js gerekir, aşağıya bakın).**
+
 ## Gerekenler
 
 ```bash

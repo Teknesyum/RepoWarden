@@ -43,6 +43,17 @@ What it will not do is look at fourteen releases, notice every single one is a d
 - It does not audit private repositories unless `rules.json` says so.
 - It cannot tell you whether your project is any good. It only checks that what you published matches what you claimed.
 
+## Install
+
+**Recommended: Teknesyum Base (Windows).**
+
+1. Download [`Teknesyum-Base.exe`](https://github.com/Teknesyum/Teknesyum-Base/releases/latest/download/Teknesyum-Base.exe) ([`.sha256`](https://github.com/Teknesyum/Teknesyum-Base/releases/latest/download/Teknesyum-Base.exe.sha256)) and run it. No admin rights are needed.
+2. Find **RepoWarden** in the list and install it. Base also updates and removes it later.
+
+Base is not code-signed yet, so Windows SmartScreen may warn on first launch: choose *More info*, then *Run anyway*. More: [Teknesyum Base](https://github.com/Teknesyum/Teknesyum-Base).
+
+**Or run it from source (needs the GitHub CLI and Node.js, see below).**
+
 ## Requirements
 
 ```bash
