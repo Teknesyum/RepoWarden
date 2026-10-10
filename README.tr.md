@@ -34,6 +34,7 @@ Yapmadığı şey şu: on dört release'e bakıp hepsinin taslak olduğunu görm
 - **Depo başına bir prompt.** Bulguyu, komutu ve kısıtı sıralayan kopyala-yapıştır metin. İstersen bir ajana verirsin, istersen kendin koşarsın.
 - **Arkasında denetim notu bırakır.** Her depoya `docs/github-audit-<tarih>.md` düşer: ne değişti, ne açık kaldı.
 - **Yıkıcı işler sıraya alınır, yapılmaz.** Release silme, uzak tag silme, depo adı değiştirme, varsayılan dal taşıma. Bkz. *Nasıl Çalışır*.
+- **Issue'ları izleyen tepsi uygulaması.** Windows'ta `RepoWarden.exe` bildirim alanında durur, her saat denetler, açık issue sayısını simgesine yazar. Bildirim isteğe bağlıdır.
 - **İki dil.** Depo belgeleri İngilizce çıkar. Çalışma raporu ikisinden biri olabilir.
 
 ## Yapmadıkları
@@ -70,7 +71,21 @@ node bin/repowarden.mjs
 
 Kuru koşum: raporu basar ve `reports/audit-<tarih>.md` dosyasına yazar. `--issues` eklersen her depoya `repowarden` etiketli bir issue açar. Sonraki koşum aynı issue'yu günceller, iş kalmayınca kapatır. `--repo <ad>` tek depoyu denetler. Kurallar `rules.json` içinde.
 
-Windows'ta [Teknesyum Base](https://github.com/Teknesyum/Teknesyum-Base) üzerinden de kurulur: sürüm zip'i `repowarden.cmd` taşır, PATH'te Node.js ister. Terminalde önem dereceleri Teknesyum tema token'larından renklenir; düz metin için `NO_COLOR` ver ya da çıktıyı yönlendir.
+### Tepsi Uygulaması (Windows)
+
+![Açık issue'ları listeleyen RepoWarden tepsi menüsü](assets/tray-menu.png)
+
+Teknesyum Base'in başlattığı dosya `RepoWarden.exe`. Bildirim alanında (saatin yanındaki simgeler) durur; yalnız GitHub CLI ister, Node.js istemez.
+
+- Her saat, `gh` hangi hesapla oturum açtıysa o hesabın açık issue'larını GitHub'a sorar: tek istek, bir saniye kadar.
+- Açık issue varsa kalkanın üstünde sayı rozeti çıkar; `+` dokuzdan fazla, `!` GitHub'a ulaşılamadı demektir.
+- Simgeye tıklayınca liste açılır. Bir satır o issue'yu tarayıcıda açar. *Şimdi denetle* beklemeyi atlar.
+- *Yeni issue'da bildirim göster* varsayılan olarak kapalıdır. Açılınca yalnız daha önce görmediği issue için bildirim verir.
+- *Windows ile başlat* ilk açılışta işaretlenir, kaldırılabilir. `--owner <ad>` başka bir hesabı ya da kuruluşu izler.
+
+Kaynaktan derlemek için `powershell -File build.ps1`; çıktı `dist/RepoWarden.exe`.
+
+Aynı zip tam denetim için `repowarden.cmd` de taşır; o PATH'te Node.js ister. Terminalde önem dereceleri Teknesyum tema token'larından renklenir; düz metin için `NO_COLOR` ver ya da çıktıyı yönlendir.
 
 ## Nasıl Çalışır
 

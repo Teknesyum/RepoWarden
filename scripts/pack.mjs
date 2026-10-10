@@ -1,5 +1,5 @@
 import { execFileSync } from "node:child_process";
-import { mkdirSync, rmSync } from "node:fs";
+import { existsSync, mkdirSync, rmSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -10,5 +10,6 @@ const files = ["repowarden.cmd", "bin", "teknesyum-ui", "rules.json", "rules.gen
 const out = join(root, "dist", `RepoWarden-${version}-win.zip`);
 mkdirSync(dirname(out), { recursive: true });
 rmSync(out, { force: true });
-execFileSync("tar", ["-a", "-c", "-f", out, ...files], { cwd: root, stdio: "inherit" });
+if (!existsSync(join(root, "dist", "RepoWarden.exe"))) { console.error("dist/RepoWarden.exe is missing; run build.ps1 first."); process.exit(1); }
+execFileSync("tar", ["-a", "-c", "-f", out, "-C", join(root, "dist"), "RepoWarden.exe", "-C", root, ...files], { cwd: root, stdio: "inherit" });
 console.log(out);

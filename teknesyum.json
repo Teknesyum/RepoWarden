@@ -3,6 +3,7 @@
   "category": "developer",
   "asset": "RepoWarden-*-win.zip",
   "method": "zip",
-  "run": "repowarden.cmd",
-  "icon": "assets/icon/icon-256.png"
+  "run": "RepoWarden.exe",
+  "icon": "assets/icon/icon-256.png",
+  "screenshot": "assets/tray-menu.png"
 }

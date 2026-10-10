@@ -1,0 +1,17 @@
+{
+  "sig.brand": "Teknesyum",
+  "sig.brandTitle": "Open the Teknesyum GitHub page",
+  "sig.support": "Buy me a coffee",
+  "sig.supportTitle": "Click to support the project",
+  "update.label": "Update",
+  "update.download": "New version available, click to download",
+  "update.install": "Downloaded, click to install",
+  "update.current": "You are up to date",
+  "update.check": "Check for updates",
+  "update.confirmSetting": "Ask before updating",
+  "update.error": "Could not check for updates",
+  "sync.synced": "Synced",
+  "sync.offline": "Offline",
+  "sync.now": "Sync now",
+  "app.title": "Application name"
+}

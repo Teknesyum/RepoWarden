@@ -34,6 +34,7 @@ What it will not do is look at fourteen releases, notice every single one is a d
 - **A prompt per repository.** Copy-paste text listing the finding, the command and the constraint. Hand it to an agent or run it yourself.
 - **An audit note left behind.** Each repository gets `docs/github-audit-<date>.md`: what changed, what is still open.
 - **Destructive actions queued, never taken.** Deleting a release, deleting a remote tag, renaming a repository, moving a default branch. See *How It Works*.
+- **A tray app that watches for issues.** On Windows, `RepoWarden.exe` sits in the notification area, checks every hour, and puts the open-issue count on its icon. Notifications are opt-in.
 - **Both languages.** Repository documents come out English. The working report can be either.
 
 ## What It Does Not Do
@@ -70,7 +71,21 @@ node bin/repowarden.mjs
 
 A dry run: it prints the report and writes it to `reports/audit-<date>.md`. Add `--issues` to open one issue per repository, labelled `repowarden`. The next run edits that issue, and closes it once nothing is left. `--repo <name>` audits one repository. The checks live in `rules.json`.
 
-On Windows it also installs from [Teknesyum Base](https://github.com/Teknesyum/Teknesyum-Base): the release zip carries `repowarden.cmd`, which needs Node.js on the PATH. In a terminal, severities are coloured from the Teknesyum theme tokens; set `NO_COLOR` or pipe the output for plain text.
+### Tray App (Windows)
+
+![RepoWarden tray menu listing open issues](assets/tray-menu.png)
+
+`RepoWarden.exe` is what Teknesyum Base starts. It lives in the notification area (the icons next to the clock) and needs only the GitHub CLI, not Node.js.
+
+- Every hour it asks GitHub for the open issues across the account `gh` is signed in to: one request, about a second.
+- With open issues the shield carries a count badge; `+` means more than nine, `!` means GitHub could not be reached.
+- Click the icon for the list. An entry opens that issue in the browser. *Check now* skips the wait.
+- *Notify on new issues* is off by default. Turned on, only issues it has not seen before raise a notification.
+- *Start with Windows* is switched on at first launch and can be unticked. `--owner <name>` watches another account or organisation.
+
+Build it from source with `powershell -File build.ps1`; the result is `dist/RepoWarden.exe`.
+
+The same zip carries `repowarden.cmd` for the full audit, which needs Node.js on the PATH. In a terminal, severities are coloured from the Teknesyum theme tokens; set `NO_COLOR` or pipe the output for plain text.
 
 ## How It Works
 

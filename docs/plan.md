@@ -83,3 +83,18 @@ Kullanıcı "yeni repon var" gerekçesiyle silmeyi istedi. RepoWarden bu işlevi
 CONTRIBUTING.md, kendi kopyası olmayan bütün depolarda varsayılan sayılır. Silinirse
 13 depoda sponsor butonu ve güvenlik politikası aynı anda kaybolur. Depo silme geri alınamaz.
 Karar kullanıcınındır; tekrar söylerse silinir.
+
+## Tepsi Uygulaması (2026-10-10)
+
+Örnek: HeadsetBatteryTray. Tek dosya .NET Framework 4 WinForms, çerçevenin kendi derleyicisiyle derlenir; kurulum gerektirmez.
+
+- [x] T1. `teknesyum-ui` hedeflerine `winforms` eklenir (`Palette.cs`, etiketler).
+- [x] T2. `src/RepoWarden.cs`: tepsi simgesi, menü, saatlik `gh search issues --owner <hesap> --state open`.
+- [x] T3. Simge: onaylı kalkan; açık issue varsa sağ altta sayı rozeti (`renk-2` dolgu, `surface` yazı).
+- [x] T4. Menü: ad + sürüm, durum satırı, Şimdi Denetle, issue listesi (tıklayınca tarayıcıda açılır), Bildirim Göster, Windows ile Başlat, Tam Denetim, Bize Ulaşın, Teknesyum, Destek Ol, Çıkış.
+- [x] T5. Bildirim isteğe bağlı, varsayılan kapalı; yalnız daha önce görülmemiş issue için balon çıkar.
+- [x] T6. `build.ps1` → `dist/RepoWarden.exe`; `scripts/pack.mjs` exe'yi zip'e koyar; `teknesyum.json` `run: RepoWarden.exe`.
+- [x] T7. Deneme: `--goruntu <klasör>` menüyü ve simgeyi PNG olarak yazar; görüntüler `docs/ui-denetim/2026-10-10/`.
+- [x] T8. README ikizi, AGENTS.md, tarama, eşleşme, commit, push, v1.1.0.
+
+Kapsam dışı: gölge kopya ile kendini güncelleme, ayrı ayar penceresi.
