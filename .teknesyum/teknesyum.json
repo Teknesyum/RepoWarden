@@ -3,8 +3,9 @@
   "category": "developer",
   "asset": "RepoWarden-*-win.zip",
   "method": "zip",
-  "run": "repowarden.cmd",
+  "run": "RepoWarden.exe",
   "icon": "assets/icon/icon-256.png",
+  "screenshot": "assets/tray-menu.png",
   "catalog": {
     "category": "developer",
     "tags": {
