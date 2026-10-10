@@ -87,7 +87,7 @@ static class Gh
 
 class Uygulama : ApplicationContext
 {
-    public const string Ad = "RepoWarden", Surum = "1.1.0";
+    public const string Ad = "RepoWarden", Surum = "1.2.0";
     const string RunAnahtar = @"Software\Microsoft\Windows\CurrentVersion\Run";
     const string AyarAnahtar = @"Software\" + Ad;
     const string Depo = "https://github.com/Teknesyum/" + Ad;
@@ -102,7 +102,7 @@ class Uygulama : ApplicationContext
 
     List<Sorun> sorunlar = new List<Sorun>();
     string durum = Dil.S("Denetleniyor…", "Checking…"), hesap, balonAdres;
-    bool hata, denetliyor, bekleyen;
+    bool hata, denetliyor, bekleyen, goster;
     Icon simge;
 
     public Uygulama(string goruntuKlasor, string sahip)
@@ -127,11 +127,12 @@ class Uygulama : ApplicationContext
 
         if (goruntu == null)
         {
-            tepsi.Visible = true;
+            EventWaitHandle ac = new EventWaitHandle(false, EventResetMode.AutoReset, Ad + "-ac");
+            new Thread(() => { while (true) if (ac.WaitOne()) ui.Post(_ => { goster = true; tepsi.Visible = true; }, null); }) { IsBackground = true }.Start();
             if (ilk) { Baslangic(true); BildirimKaydet(false); }
         }
         saat.Interval = Aralik;
-        saat.Tick += (s, e) => Denetle();
+        saat.Tick += (s, e) => { goster = false; Denetle(); };
         saat.Start();
         Denetle();
     }
@@ -219,6 +220,7 @@ class Uygulama : ApplicationContext
         if (hata) durum = sorun + " · " + an;
         else
         {
+            if (goruntu == null && liste.Count > 0) tepsi.Visible = true;
             Bildir(liste);
             sorunlar = liste;
             durum = (liste.Count == 0 ? Dil.S("Açık issue yok", "No open issues") : string.Format(Dil.S("{0} açık issue", liste.Count == 1 ? "{0} open issue" : "{0} open issues"), liste.Count >= Gh.Sinir ? Gh.Sinir + "+" : liste.Count.ToString())) + " · " + an;
@@ -227,6 +229,7 @@ class Uygulama : ApplicationContext
         tepsi.Text = ipucu.Length > 63 ? ipucu.Substring(0, 63) : ipucu;
         Ciz(sorunlar.Count, hata);
         MenuKur();
+        if (goruntu == null && !menu.Visible) tepsi.Visible = goster || hata || sorunlar.Count > 0;
         if (goruntu != null) Goruntule();
     }
 
@@ -393,7 +396,11 @@ class Uygulama : ApplicationContext
         bool yeni;
         using (Mutex mx = new Mutex(true, Ad + (klasor == null ? "-tek" : "-goruntu"), out yeni))
         {
-            if (!yeni) return;
+            if (!yeni)
+            {
+                try { using (EventWaitHandle h = EventWaitHandle.OpenExisting(Ad + "-ac")) h.Set(); } catch { }
+                return;
+            }
             try { SetProcessDPIAware(); } catch { }
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);

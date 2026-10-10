@@ -78,7 +78,8 @@ Kuru koşum: raporu basar ve `reports/audit-<tarih>.md` dosyasına yazar. `--iss
 Teknesyum Base'in başlattığı dosya `RepoWarden.exe`. Bildirim alanında (saatin yanındaki simgeler) durur; yalnız GitHub CLI ister, Node.js istemez.
 
 - Her saat, `gh` hangi hesapla oturum açtıysa o hesabın açık issue'larını GitHub'a sorar: tek istek, bir saniye kadar.
-- Açık issue varsa kalkanın üstünde sayı rozeti çıkar; `+` dokuzdan fazla, `!` GitHub'a ulaşılamadı demektir.
+- Açık issue yoksa simge hiç görünmez. Geri getirmek için `RepoWarden.exe` dosyasını yeniden çalıştır; saat dolana kadar kalır.
+- Açık issue varsa kalkan sayı rozetiyle görünür; `+` dokuzdan fazla, `!` GitHub'a ulaşılamadı demektir.
 - Simgeye tıklayınca liste açılır. Bir satır o issue'yu tarayıcıda açar. *Şimdi denetle* beklemeyi atlar.
 - *Yeni issue'da bildirim göster* varsayılan olarak kapalıdır. Açılınca yalnız daha önce görmediği issue için bildirim verir.
 - *Windows ile başlat* ilk açılışta işaretlenir, kaldırılabilir. `--owner <ad>` başka bir hesabı ya da kuruluşu izler.
