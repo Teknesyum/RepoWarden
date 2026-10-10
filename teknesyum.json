@@ -4,6 +4,5 @@
   "asset": "RepoWarden-*-win.zip",
   "method": "zip",
   "run": "RepoWarden.exe",
-  "icon": "assets/icon/icon-256.png",
-  "screenshot": "assets/tray-menu.png"
+  "icon": "assets/icon/icon-256.png"
 }

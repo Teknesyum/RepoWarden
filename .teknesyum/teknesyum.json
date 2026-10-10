@@ -5,7 +5,6 @@
   "method": "zip",
   "run": "RepoWarden.exe",
   "icon": "assets/icon/icon-256.png",
-  "screenshot": "assets/tray-menu.png",
   "catalog": {
     "category": "developer",
     "tags": {
