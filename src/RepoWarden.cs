@@ -87,14 +87,14 @@ static class Gh
 
 class Uygulama : ApplicationContext
 {
-    public const string Ad = "RepoWarden", Surum = "1.2.0";
+    public const string Ad = "RepoWarden", Surum = "1.3.0";
     const string RunAnahtar = @"Software\Microsoft\Windows\CurrentVersion\Run";
     const string AyarAnahtar = @"Software\" + Ad;
     const string Depo = "https://github.com/Teknesyum/" + Ad;
-    const int Aralik = 3600000, MenuSinir = 12, BaslikSinir = 48;
+    const int Aralik = 3600000, AcilisSuresi = 180000, MenuSinir = 12, BaslikSinir = 48;
 
     readonly NotifyIcon tepsi = new NotifyIcon();
-    readonly System.Windows.Forms.Timer saat = new System.Windows.Forms.Timer();
+    readonly System.Windows.Forms.Timer saat = new System.Windows.Forms.Timer(), acilis = new System.Windows.Forms.Timer();
     readonly ContextMenuStrip menu = new ContextMenuStrip();
     readonly SynchronizationContext ui;
     readonly Image temel;
@@ -102,7 +102,7 @@ class Uygulama : ApplicationContext
 
     List<Sorun> sorunlar = new List<Sorun>();
     string durum = Dil.S("Denetleniyor…", "Checking…"), hesap, balonAdres;
-    bool hata, denetliyor, bekleyen, goster;
+    bool hata, denetliyor, bekleyen, goster = true;
     Icon simge;
 
     public Uygulama(string goruntuKlasor, string sahip)
@@ -117,7 +117,7 @@ class Uygulama : ApplicationContext
         using (Stream k = typeof(Uygulama).Assembly.GetManifestResourceStream("icon.png")) temel = new Bitmap(k);
 
         MenuTemasi.Uygula(menu);
-        menu.Closed += (s, e) => { if (bekleyen) MenuKur(); };
+        menu.Closed += (s, e) => { if (bekleyen) MenuKur(); Gorunurluk(); };
         MenuKur();
         tepsi.ContextMenuStrip = menu;
         tepsi.Text = Ad + ": " + durum;
@@ -128,11 +128,14 @@ class Uygulama : ApplicationContext
         if (goruntu == null)
         {
             EventWaitHandle ac = new EventWaitHandle(false, EventResetMode.AutoReset, Ad + "-ac");
-            new Thread(() => { while (true) if (ac.WaitOne()) ui.Post(_ => { goster = true; tepsi.Visible = true; }, null); }) { IsBackground = true }.Start();
+            new Thread(() => { while (true) if (ac.WaitOne()) ui.Post(_ => AcilisBaslat(), null); }) { IsBackground = true }.Start();
             if (ilk) { Baslangic(true); BildirimKaydet(false); }
+            acilis.Interval = AcilisSuresi;
+            acilis.Tick += (s, e) => { acilis.Stop(); goster = false; Gorunurluk(); };
+            AcilisBaslat();
         }
         saat.Interval = Aralik;
-        saat.Tick += (s, e) => { goster = false; Denetle(); };
+        saat.Tick += (s, e) => Denetle();
         saat.Start();
         Denetle();
     }
@@ -160,10 +163,12 @@ class Uygulama : ApplicationContext
                 menu.Items.Add(new ToolStripMenuItem(string.Format(Dil.S("… {0} tane daha", "… {0} more"), sorunlar.Count - MenuSinir), null, (s, e) => Git(HepsiAdres())));
         }
         menu.Items.Add(new ToolStripSeparator());
-        ToolStripMenuItem bildirim = null, baslangic = null;
+        ToolStripMenuItem bildirim = null, baslangic = null, gizle = null;
         bildirim = new ToolStripMenuItem(Dil.S("Yeni issue'da bildirim göster", "Notify on new issues"), null, (s, e) => { BildirimKaydet(!bildirim.Checked); bildirim.Checked = !bildirim.Checked; }) { Checked = BildirimAcik() };
         baslangic = new ToolStripMenuItem(Dil.S("Windows ile başlat", "Start with Windows"), null, (s, e) => { Baslangic(!baslangic.Checked); baslangic.Checked = BaslangicVar(); }) { Checked = BaslangicVar() };
+        gizle = new ToolStripMenuItem(Dil.S("Açık issue yokken simgeyi gizle", "Hide the icon when there are no open issues"), null, (s, e) => { GizleKaydet(!gizle.Checked); gizle.Checked = !gizle.Checked; }) { Checked = GizleAcik() };
         menu.Items.Add(bildirim);
+        menu.Items.Add(gizle);
         menu.Items.Add(baslangic);
         if (File.Exists(tamDenetim))
             menu.Items.Add(new ToolStripMenuItem(Dil.S("Tam denetim raporu", "Full audit report"), null, (s, e) => Git(tamDenetim)));
@@ -229,8 +234,22 @@ class Uygulama : ApplicationContext
         tepsi.Text = ipucu.Length > 63 ? ipucu.Substring(0, 63) : ipucu;
         Ciz(sorunlar.Count, hata);
         MenuKur();
-        if (goruntu == null && !menu.Visible) tepsi.Visible = goster || hata || sorunlar.Count > 0;
+        Gorunurluk();
         if (goruntu != null) Goruntule();
+    }
+
+    void AcilisBaslat()
+    {
+        goster = true;
+        tepsi.Visible = true;
+        acilis.Stop();
+        acilis.Start();
+    }
+
+    void Gorunurluk()
+    {
+        if (goruntu != null || menu.Visible) return;
+        tepsi.Visible = !GizleAcik() || goster || hata || sorunlar.Count > 0;
     }
 
     void Bildir(List<Sorun> liste)
@@ -360,6 +379,18 @@ class Uygulama : ApplicationContext
         catch { }
     }
 
+    static bool GizleAcik()
+    {
+        try { using (RegistryKey k = Registry.CurrentUser.OpenSubKey(AyarAnahtar)) return k != null && k.GetValue("SifirdaGizle") is int && (int)k.GetValue("SifirdaGizle") != 0; }
+        catch { return false; }
+    }
+
+    static void GizleKaydet(bool acik)
+    {
+        try { using (RegistryKey k = Registry.CurrentUser.CreateSubKey(AyarAnahtar)) k.SetValue("SifirdaGizle", acik ? 1 : 0, RegistryValueKind.DWord); }
+        catch { }
+    }
+
     static bool BaslangicVar()
     {
         using (RegistryKey k = Registry.CurrentUser.OpenSubKey(RunAnahtar))
@@ -378,6 +409,7 @@ class Uygulama : ApplicationContext
     void Kapat()
     {
         saat.Stop();
+        acilis.Stop();
         tepsi.Visible = false;
         tepsi.Dispose();
         ExitThread();

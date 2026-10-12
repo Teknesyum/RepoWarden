@@ -78,10 +78,10 @@ A dry run: it prints the report and writes it to `reports/audit-<date>.md`. Add 
 `RepoWarden.exe` is what Teknesyum Base starts. It lives in the notification area (the icons next to the clock) and needs only the GitHub CLI, not Node.js.
 
 - Every hour it asks GitHub for the open issues across the account `gh` is signed in to: one request, about a second.
-- With no open issues there is no icon at all. Start `RepoWarden.exe` again to bring it back; it stays for the hour.
-- With open issues the shield appears with a count badge; `+` means more than nine, `!` means GitHub could not be reached.
+- The shield is always there; with open issues it carries a count badge: `+` means more than nine, `!` means GitHub could not be reached.
 - Click the icon for the list. An entry opens that issue in the browser. *Check now* skips the wait.
 - *Notify on new issues* is off by default. Turned on, only issues it has not seen before raise a notification.
+- *Hide the icon when there are no open issues* is off by default. Turned on, the icon shows for three minutes after the app starts, then stays hidden while the count is zero. Start `RepoWarden.exe` again for another three minutes.
 - *Start with Windows* is switched on at first launch and can be unticked. `--owner <name>` watches another account or organisation.
 
 Build it from source with `powershell -File build.ps1`; the result is `dist/RepoWarden.exe`.
