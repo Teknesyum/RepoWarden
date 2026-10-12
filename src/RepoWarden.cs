@@ -32,7 +32,7 @@ static class Surec
 {
     public const int Yok = -1, Zaman = -2;
 
-    public static int Kos(string dosya, string arg, string klasor, string girdi, int sure, out string cikti)
+    public static int Kos(string dosya, string arg, string klasor, string girdi, int sure, Action<string> satir, out string cikti)
     {
         cikti = "";
         System.Text.StringBuilder sb = new System.Text.StringBuilder();
@@ -50,7 +50,7 @@ static class Surec
         {
             using (System.Diagnostics.Process p = System.Diagnostics.Process.Start(psi))
             {
-                p.OutputDataReceived += (s, e) => { if (e.Data != null) lock (sb) sb.AppendLine(e.Data); };
+                p.OutputDataReceived += (s, e) => { if (e.Data == null) return; lock (sb) sb.AppendLine(e.Data); if (satir != null) satir(e.Data); };
                 p.ErrorDataReceived += (s, e) => { };
                 p.BeginOutputReadLine();
                 p.BeginErrorReadLine();
@@ -73,7 +73,7 @@ static class Gh
 {
     public const int Yok = Surec.Yok, Zaman = Surec.Zaman, Sinir = 100;
 
-    public static int Kos(string arg, out string cikti) { return Surec.Kos("gh", arg, null, null, 60000, out cikti); }
+    public static int Kos(string arg, out string cikti) { return Surec.Kos("gh", arg, null, null, 60000, null, out cikti); }
 
     public static List<Sorun> Ac(string hesap, out int kod)
     {
@@ -102,11 +102,11 @@ static class Gh
 
 class Uygulama : ApplicationContext
 {
-    public const string Ad = "RepoWarden", Surum = "1.5.0";
+    public const string Ad = "RepoWarden", Surum = "1.6.0";
     const string RunAnahtar = @"Software\Microsoft\Windows\CurrentVersion\Run";
     const string AyarAnahtar = @"Software\" + Ad;
     const string Depo = "https://github.com/Teknesyum/" + Ad;
-    const string ClaudeArg = "-p --tools Read,Grep,Glob --setting-sources local --strict-mcp-config --no-session-persistence --model sonnet --output-format json";
+    const string ClaudeArg = "-p --tools Read,Grep,Glob --setting-sources local --strict-mcp-config --no-session-persistence --model sonnet --output-format stream-json --verbose";
     const int ClaudeSure = 600000, NotSinir = 300, VarsayilanDk = 60, AcilisSuresi = 180000, MenuSinir = 12, BaslikSinir = 48;
 
     static readonly int[] Adimlar = { 5, 10, 15, 30, 60, 120, 240, 480 };
@@ -119,6 +119,8 @@ class Uygulama : ApplicationContext
     readonly string gorulenYol, incelenenYol, gunlukYol, goruntu, tamDenetim;
     readonly bool tekSefer;
 
+    readonly List<string> akis = new List<string>();
+    Izleme pencere;
     List<Sorun> sorunlar = new List<Sorun>();
     string durum = Dil.S("Denetleniyor…", "Checking…"), hesap, balonAdres;
     bool hata, denetliyor, inceliyor, bekleyen, goster = true;
@@ -173,7 +175,7 @@ class Uygulama : ApplicationContext
         menu.Items.Add(new ToolStripMenuItem(Ad + " v" + Surum) { Enabled = false });
         menu.Items.Add(new ToolStripMenuItem(durum) { Enabled = false });
         menu.Items.Add(new ToolStripMenuItem(Dil.S("Şimdi denetle", "Check now"), null, (s, e) => Denetle()));
-        menu.Items.Add(new ToolStripMenuItem(Dil.S("Issue'ları Claude ile incele", "Review issues with Claude"), null, (s, e) => Incele()) { Enabled = sorunlar.Count > 0 && !inceliyor, ToolTipText = Dil.S("Her yeni issue için Claude'u bir kez çalıştırır; gerekeni deponun defterine yazar", "Runs Claude once per new issue and writes what needs doing to the repository's ledger") });
+        menu.Items.Add(new ToolStripMenuItem(Dil.S("Issue'ları Claude ile incele", "Review issues with Claude"), null, (s, e) => Incele()) { Enabled = sorunlar.Count > 0 || inceliyor, ToolTipText = Dil.S("Her yeni issue için Claude'u bir kez çalıştırır; gerekeni deponun defterine yazar", "Runs Claude once per new issue and writes what needs doing to the repository's ledger") });
         if (File.Exists(gunlukYol)) menu.Items.Add(new ToolStripMenuItem(Dil.S("İnceleme kaydı", "Review log"), null, (s, e) => Git(gunlukYol)));
         if (sorunlar.Count > 0)
         {
@@ -284,7 +286,7 @@ class Uygulama : ApplicationContext
 
     void Incele()
     {
-        if (inceliyor) return;
+        if (inceliyor) { PencereAc(); return; }
         string kok = ProjeKok();
         if (kok == null || !Directory.Exists(kok))
         {
@@ -299,9 +301,14 @@ class Uygulama : ApplicationContext
         inceliyor = true;
         List<Sorun> liste = sorunlar.ToList();
         MenuKur();
+        akis.Clear();
+        if (pencere != null && !pencere.IsDisposed) pencere.Close();
+        PencereAc();
+        Izle(string.Format(Dil.S("İnceleme başladı: {0} açık issue", "Review started: {0} open issues"), liste.Count));
+        Action<string> yaz = s => ui.Post(__ => Izle(s), null);
         ThreadPool.QueueUserWorkItem(_ =>
         {
-            int yazildi = 0, gereksiz = 0, klasorsuz = 0, basarisiz = 0;
+            int yazildi = 0, gereksiz = 0, klasorsuz = 0, basarisiz = 0, onceki = 0;
             bool claudeYok = false;
             try
             {
@@ -309,25 +316,53 @@ class Uygulama : ApplicationContext
                 try { if (File.Exists(incelenenYol)) foreach (string s in File.ReadAllLines(incelenenYol)) incelenen.Add(s); } catch { }
                 foreach (Sorun so in liste)
                 {
-                    if (incelenen.Contains(so.Adres)) continue;
+                    if (incelenen.Contains(so.Adres)) { onceki++; continue; }
                     string ad = so.Depo + " #" + so.No;
                     string klasor = System.Text.RegularExpressions.Regex.IsMatch(so.Depo, "^[A-Za-z0-9_-][A-Za-z0-9._-]*$") ? Path.Combine(kok, so.Depo) : null;
-                    if (klasor == null || !Directory.Exists(Path.Combine(klasor, ".git"))) { klasorsuz++; Gunluk(ad, Dil.S("yerel klasör yok", "no local folder")); continue; }
+                    if (klasor == null || !Directory.Exists(Path.Combine(klasor, ".git"))) { klasorsuz++; Gunluk(ad, Dil.S("yerel klasör yok", "no local folder")); yaz(ad + "  " + Dil.S("yerel klasör yok, atlandı", "no local folder, skipped")); continue; }
                     ui.Post(__ => DurumYaz(Dil.S("İnceleniyor: ", "Reviewing: ") + ad), null);
-                    string govde, yanit;
-                    if (Gh.Kos("issue view " + so.Adres + " --json title,body,author,comments", out govde) != 0) { basarisiz++; Gunluk(ad, Dil.S("issue okunamadı", "could not read the issue")); continue; }
-                    int kod = Surec.Kos("claude", ClaudeArg, klasor, Istem(so, govde), ClaudeSure, out yanit);
-                    if (kod == Surec.Yok) { claudeYok = true; basarisiz++; Gunluk(ad, Dil.S("Claude Code (claude) bulunamadı", "Claude Code (claude) not found")); break; }
-                    if (kod != 0) { basarisiz++; Gunluk(ad, Dil.S("Claude yanıt vermedi", "Claude did not answer") + " (" + kod + ")"); continue; }
+                    yaz("");
+                    yaz(ad + "  " + TekSatir(so.Baslik, NotSinir));
+                    yaz("  " + Dil.S("issue okunuyor", "reading the issue"));
+                    string govde, yanit, sonuc = null;
+                    if (Gh.Kos("issue view " + so.Adres + " --json title,body,author,comments", out govde) != 0) { basarisiz++; Gunluk(ad, Dil.S("issue okunamadı", "could not read the issue")); yaz("  " + Dil.S("issue okunamadı", "could not read the issue")); continue; }
+                    yaz("  " + Dil.S("Claude inceliyor", "Claude is reviewing"));
+                    Action<string> dinle = l =>
+                    {
+                        try
+                        {
+                            Dictionary<string, object> d = new System.Web.Script.Serialization.JavaScriptSerializer().DeserializeObject(l) as Dictionary<string, object>;
+                            if (d == null || !d.ContainsKey("type")) return;
+                            string tip = Convert.ToString(d["type"]);
+                            if (tip == "result") { sonuc = l; return; }
+                            if (tip != "assistant") return;
+                            Dictionary<string, object> m = d["message"] as Dictionary<string, object>;
+                            foreach (object o in (object[])m["content"])
+                            {
+                                Dictionary<string, object> p = o as Dictionary<string, object>;
+                                if (p == null || Convert.ToString(p["type"]) != "tool_use") continue;
+                                Dictionary<string, object> g = p["input"] as Dictionary<string, object>;
+                                string hedef = "";
+                                foreach (string a in new[] { "file_path", "pattern", "path" }) if (g != null && g.ContainsKey(a)) { hedef = Convert.ToString(g[a]); break; }
+                                if (hedef.StartsWith(klasor, StringComparison.OrdinalIgnoreCase)) hedef = hedef.Substring(klasor.Length).TrimStart('\\', '/');
+                                yaz("    " + Convert.ToString(p["name"]) + "  " + TekSatir(hedef, NotSinir));
+                            }
+                        }
+                        catch { }
+                    };
+                    int kod = Surec.Kos("claude", ClaudeArg, klasor, Istem(so, govde), ClaudeSure, dinle, out yanit);
+                    if (kod == Surec.Yok) { claudeYok = true; basarisiz++; Gunluk(ad, Dil.S("Claude Code (claude) bulunamadı", "Claude Code (claude) not found")); yaz("  " + Dil.S("Claude Code (claude) bulunamadı", "Claude Code (claude) not found")); break; }
+                    if (kod != 0) { basarisiz++; Gunluk(ad, Dil.S("Claude yanıt vermedi", "Claude did not answer") + " (" + kod + ")"); yaz("  " + Dil.S("Claude yanıt vermedi", "Claude did not answer") + " (" + kod + ")"); continue; }
                     string not;
-                    bool gerek = Karar(yanit, out not);
+                    bool gerek = Karar(sonuc ?? "", out not);
                     if (gerek) { DeftereYaz(klasor, so, not); yazildi++; } else gereksiz++;
+                    yaz("  → " + (gerek ? Dil.S("deftere yazıldı", "written to the ledger") : Dil.S("gerek yok", "nothing needed")) + (not.Length > 0 ? ": " + not : ""));
                     Gunluk(ad, (gerek ? Dil.S("deftere yazıldı", "written to the ledger") : Dil.S("gerek yok", "nothing needed")) + (not.Length > 0 ? ": " + not : ""));
                     incelenen.Add(so.Adres);
                     try { File.AppendAllText(incelenenYol, so.Adres + Environment.NewLine); } catch { }
                 }
             }
-            catch (Exception e) { basarisiz++; Gunluk("-", e.Message); }
+            catch (Exception e) { basarisiz++; Gunluk("-", e.Message); yaz(e.Message); }
             string ozet = claudeYok ? Dil.S("Bu sistemde Claude Code kurulu olmalı: komut satırında claude bulunamadı", "Claude Code must be installed on this system: claude was not found on the command line")
                 : yazildi + gereksiz + klasorsuz + basarisiz == 0
                 ? Dil.S("İncelenecek yeni issue yok", "No new issues to review")
@@ -336,12 +371,29 @@ class Uygulama : ApplicationContext
             {
                 inceliyor = false;
                 if (tekSefer) { Kapat(); return; }
+                Izle("");
+                if (onceki > 0) Izle(string.Format(Dil.S("{0} issue daha önce incelenmişti", "{0} issues were reviewed before"), onceki));
+                Izle(ozet);
                 DurumYaz(ozet + " · " + DateTime.Now.ToString("HH:mm"));
                 balonAdres = gunlukYol;
                 tepsi.Visible = true;
                 tepsi.ShowBalloonTip(10000, claudeYok ? Dil.S("Claude Code gerekli", "Claude Code is required") : Dil.S("İnceleme bitti", "Review finished"), ozet, claudeYok ? ToolTipIcon.Warning : ToolTipIcon.Info);
             }, null);
         });
+    }
+
+    void Izle(string s)
+    {
+        akis.Add(s);
+        if (pencere != null && !pencere.IsDisposed) pencere.Ekle(s);
+    }
+
+    void PencereAc()
+    {
+        if (tekSefer) return;
+        if (pencere == null || pencere.IsDisposed) pencere = new Izleme(akis);
+        pencere.Show();
+        pencere.Activate();
     }
 
     static string Istem(Sorun so, string govde)
@@ -511,6 +563,16 @@ class Uygulama : ApplicationContext
             using (Bitmap b = Resim(n, 12, false)) b.Save(Path.Combine(goruntu, "simge-" + n + "-cok.png"));
             using (Bitmap b = Resim(n, 0, true)) b.Save(Path.Combine(goruntu, "simge-" + n + "-uyari.png"));
         }
+        using (Izleme i = new Izleme(new[] { string.Format(Dil.S("İnceleme başladı: {0} açık issue", "Review started: {0} open issues"), 2), "", "RepoWarden #1  Show the time of the next check in the tray tooltip", "  " + Dil.S("issue okunuyor", "reading the issue"), "  " + Dil.S("Claude inceliyor", "Claude is reviewing"), "    Read  src\\RepoWarden.cs", "  → " + Dil.S("deftere yazıldı", "written to the ledger") }))
+        {
+            i.Show();
+            Application.DoEvents();
+            using (Bitmap b = new Bitmap(i.Width, i.Height))
+            {
+                i.DrawToBitmap(b, new Rectangle(0, 0, i.Width, i.Height));
+                b.Save(Path.Combine(goruntu, "inceleme.png"));
+            }
+        }
         menu.Show(new Point(40, 40));
         Application.DoEvents();
         using (Bitmap b = new Bitmap(menu.Width, menu.Height))
@@ -679,6 +741,36 @@ class Cubuk : Control
         Invalidate();
         if (Degisti != null) Degisti(this, EventArgs.Empty);
     }
+}
+
+class Izleme : Form
+{
+    readonly TextBox kutu = new TextBox();
+
+    public Izleme(IEnumerable<string> satirlar)
+    {
+        Text = Uygulama.Ad + ": " + Dil.S("İnceleme", "Review");
+        Font = Tema.Sans(Tema.FontSize2 * Tema.Olcek);
+        BackColor = Tema.Surface;
+        ForeColor = Tema.TextBody;
+        try { Icon = Icon.ExtractAssociatedIcon(Application.ExecutablePath); } catch { }
+        StartPosition = FormStartPosition.CenterScreen;
+        Size olcu = TextRenderer.MeasureText(new string('0', 80), Font);
+        ClientSize = new Size(olcu.Width, olcu.Height * 24);
+        Padding = new Padding(olcu.Height / 2);
+        kutu.Multiline = true;
+        kutu.ReadOnly = true;
+        kutu.TabStop = false;
+        kutu.BorderStyle = BorderStyle.None;
+        kutu.ScrollBars = ScrollBars.Vertical;
+        kutu.Dock = DockStyle.Fill;
+        kutu.BackColor = Tema.Surface;
+        kutu.ForeColor = Tema.TextBody;
+        Controls.Add(kutu);
+        foreach (string s in satirlar) Ekle(s);
+    }
+
+    public void Ekle(string s) { kutu.AppendText(s + Environment.NewLine); }
 }
 
 static class Etiket
