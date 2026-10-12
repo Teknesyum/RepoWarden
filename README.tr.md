@@ -34,7 +34,7 @@ Yapmadığı şey şu: on dört release'e bakıp hepsinin taslak olduğunu görm
 - **Depo başına bir prompt.** Bulguyu, komutu ve kısıtı sıralayan kopyala-yapıştır metin. İstersen bir ajana verirsin, istersen kendin koşarsın.
 - **Arkasında denetim notu bırakır.** Her depoya `docs/github-audit-<tarih>.md` düşer: ne değişti, ne açık kaldı.
 - **Yıkıcı işler sıraya alınır, yapılmaz.** Release silme, uzak tag silme, depo adı değiştirme, varsayılan dal taşıma. Bkz. *Nasıl Çalışır*.
-- **Issue'ları izleyen tepsi uygulaması.** Windows'ta `RepoWarden.exe` bildirim alanında durur, her saat denetler, açık issue sayısını simgesine yazar. Bildirim isteğe bağlıdır.
+- **Issue'ları izleyen tepsi uygulaması.** Windows'ta `RepoWarden.exe` bildirim alanında durur, senin belirlediğin sıklıkta denetler, açık issue sayısını simgesine yazar. Bildirim isteğe bağlıdır.
 - **İki dil.** Depo belgeleri İngilizce çıkar. Çalışma raporu ikisinden biri olabilir.
 
 ## Yapmadıkları
@@ -77,9 +77,10 @@ Kuru koşum: raporu basar ve `reports/audit-<tarih>.md` dosyasına yazar. `--iss
 
 Teknesyum Base'in başlattığı dosya `RepoWarden.exe`. Bildirim alanında (saatin yanındaki simgeler) durur; yalnız GitHub CLI ister, Node.js istemez.
 
-- Her saat, `gh` hangi hesapla oturum açtıysa o hesabın açık issue'larını GitHub'a sorar: tek istek, bir saniye kadar.
+- Varsayılan olarak her saat, `gh` hangi hesapla oturum açtıysa o hesabın açık issue'larını GitHub'a sorar: tek istek, bir saniye kadar.
 - Kalkan hep oradadır; açık issue varsa sayı rozeti taşır: `+` dokuzdan fazla, `!` GitHub'a ulaşılamadı demektir.
 - Simgeye tıklayınca liste açılır. Bir satır o issue'yu tarayıcıda açar. *Şimdi denetle* beklemeyi atlar.
+- *Denetleme sıklığı* altındaki çubuk aralığı belirler: 5, 10, 15, 30 dakika ya da 1, 2, 4, 8 saat.
 - *Yeni issue'da bildirim göster* varsayılan olarak kapalıdır. Açılınca yalnız daha önce görmediği issue için bildirim verir.
 - *Açık issue yokken simgeyi gizle* varsayılan olarak kapalıdır. Açılınca simge uygulama başladıktan sonra üç dakika görünür, sonra sayı sıfırken gizli kalır. Üç dakika daha için `RepoWarden.exe` dosyasını yeniden çalıştır.
 - *Windows ile başlat* ilk açılışta işaretlenir, kaldırılabilir. `--owner <ad>` başka bir hesabı ya da kuruluşu izler.

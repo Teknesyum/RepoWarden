@@ -87,11 +87,13 @@ static class Gh
 
 class Uygulama : ApplicationContext
 {
-    public const string Ad = "RepoWarden", Surum = "1.3.0";
+    public const string Ad = "RepoWarden", Surum = "1.4.0";
     const string RunAnahtar = @"Software\Microsoft\Windows\CurrentVersion\Run";
     const string AyarAnahtar = @"Software\" + Ad;
     const string Depo = "https://github.com/Teknesyum/" + Ad;
-    const int Aralik = 3600000, AcilisSuresi = 180000, MenuSinir = 12, BaslikSinir = 48;
+    const int VarsayilanDk = 60, AcilisSuresi = 180000, MenuSinir = 12, BaslikSinir = 48;
+
+    static readonly int[] Adimlar = { 5, 10, 15, 30, 60, 120, 240, 480 };
 
     readonly NotifyIcon tepsi = new NotifyIcon();
     readonly System.Windows.Forms.Timer saat = new System.Windows.Forms.Timer(), acilis = new System.Windows.Forms.Timer();
@@ -134,7 +136,7 @@ class Uygulama : ApplicationContext
             acilis.Tick += (s, e) => { acilis.Stop(); goster = false; Gorunurluk(); };
             AcilisBaslat();
         }
-        saat.Interval = Aralik;
+        saat.Interval = AralikDk() * 60000;
         saat.Tick += (s, e) => Denetle();
         saat.Start();
         Denetle();
@@ -167,6 +169,17 @@ class Uygulama : ApplicationContext
         bildirim = new ToolStripMenuItem(Dil.S("Yeni issue'da bildirim göster", "Notify on new issues"), null, (s, e) => { BildirimKaydet(!bildirim.Checked); bildirim.Checked = !bildirim.Checked; }) { Checked = BildirimAcik() };
         baslangic = new ToolStripMenuItem(Dil.S("Windows ile başlat", "Start with Windows"), null, (s, e) => { Baslangic(!baslangic.Checked); baslangic.Checked = BaslangicVar(); }) { Checked = BaslangicVar() };
         gizle = new ToolStripMenuItem(Dil.S("Açık issue yokken simgeyi gizle", "Hide the icon when there are no open issues"), null, (s, e) => { GizleKaydet(!gizle.Checked); gizle.Checked = !gizle.Checked; }) { Checked = GizleAcik() };
+        ToolStripMenuItem siklik = new ToolStripMenuItem(SiklikYazi(AralikDk())) { Enabled = false };
+        Cubuk cubuk = new Cubuk { Adim = Adimlar.Length, Deger = Array.IndexOf(Adimlar, AralikDk()), Size = new Size(TextRenderer.MeasureText(SiklikYazi(Adimlar[Adimlar.Length - 1]), menu.Font).Width, menu.Font.Height) };
+        cubuk.Degisti += (s, e) =>
+        {
+            int dk = Adimlar[cubuk.Deger];
+            AralikKaydet(dk);
+            saat.Interval = dk * 60000;
+            siklik.Text = SiklikYazi(dk);
+        };
+        menu.Items.Add(siklik);
+        menu.Items.Add(new ToolStripControlHost(cubuk) { AutoSize = false, Size = cubuk.Size, BackColor = Tema.Surface });
         menu.Items.Add(bildirim);
         menu.Items.Add(gizle);
         menu.Items.Add(baslangic);
@@ -379,6 +392,31 @@ class Uygulama : ApplicationContext
         catch { }
     }
 
+    static string SiklikYazi(int dk)
+    {
+        string sure = dk < 60 ? string.Format(Dil.S("{0} dakika", "{0} minutes"), dk) : string.Format(Dil.S("{0} saat", dk == 60 ? "{0} hour" : "{0} hours"), dk / 60);
+        return Dil.S("Denetleme sıklığı: ", "Check every: ") + sure;
+    }
+
+    static int AralikDk()
+    {
+        try
+        {
+            using (RegistryKey k = Registry.CurrentUser.OpenSubKey(AyarAnahtar))
+            {
+                object v = k == null ? null : k.GetValue("AralikDk");
+                return v is int && Array.IndexOf(Adimlar, (int)v) >= 0 ? (int)v : VarsayilanDk;
+            }
+        }
+        catch { return VarsayilanDk; }
+    }
+
+    static void AralikKaydet(int dk)
+    {
+        try { using (RegistryKey k = Registry.CurrentUser.CreateSubKey(AyarAnahtar)) k.SetValue("AralikDk", dk, RegistryValueKind.DWord); }
+        catch { }
+    }
+
     static bool GizleAcik()
     {
         try { using (RegistryKey k = Registry.CurrentUser.OpenSubKey(AyarAnahtar)) return k != null && k.GetValue("SifirdaGizle") is int && (int)k.GetValue("SifirdaGizle") != 0; }
@@ -438,6 +476,48 @@ class Uygulama : ApplicationContext
             Application.SetCompatibleTextRenderingDefault(false);
             Application.Run(new Uygulama(klasor, sahip));
         }
+    }
+}
+
+class Cubuk : Control
+{
+    public int Adim = 2, Deger;
+    public event EventHandler Degisti;
+
+    public Cubuk()
+    {
+        SetStyle(ControlStyles.UserPaint | ControlStyles.AllPaintingInWmPaint | ControlStyles.OptimizedDoubleBuffer | ControlStyles.ResizeRedraw, true);
+        BackColor = Tema.Surface;
+        Cursor = Cursors.Hand;
+    }
+
+    float Cap { get { return Tema.FontSize2 * Tema.Olcek; } }
+
+    protected override void OnPaint(PaintEventArgs e)
+    {
+        float c = Cap, x0 = c / 2, x1 = Width - c / 2, y = Height / 2f, x = x0 + (x1 - x0) * Deger / (Adim - 1);
+        e.Graphics.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
+        using (Pen iz = new Pen(Tema.BorderDecorative, Tema.FocusWidth * Tema.Olcek))
+        using (Pen dolu = new Pen(Tema.Renk1, Tema.FocusWidth * Tema.Olcek))
+        using (SolidBrush top = new SolidBrush(Tema.Renk1))
+        {
+            e.Graphics.DrawLine(iz, x0, y, x1, y);
+            e.Graphics.DrawLine(dolu, x0, y, x, y);
+            e.Graphics.FillEllipse(top, x - c / 2, y - c / 2, c, c);
+        }
+    }
+
+    protected override void OnMouseDown(MouseEventArgs e) { base.OnMouseDown(e); if (e.Button == MouseButtons.Left) Ayarla(e.X); }
+    protected override void OnMouseMove(MouseEventArgs e) { base.OnMouseMove(e); if (e.Button == MouseButtons.Left) Ayarla(e.X); }
+
+    void Ayarla(int fare)
+    {
+        float c = Cap, x0 = c / 2, x1 = Width - c / 2;
+        int d = Math.Max(0, Math.Min(Adim - 1, (int)Math.Round((fare - x0) / (x1 - x0) * (Adim - 1))));
+        if (d == Deger) return;
+        Deger = d;
+        Invalidate();
+        if (Degisti != null) Degisti(this, EventArgs.Empty);
     }
 }
 
