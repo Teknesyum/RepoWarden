@@ -81,6 +81,7 @@ A dry run: it prints the report and writes it to `reports/audit-<date>.md`. Add 
 - The shield is always there; with open issues it carries a count badge: `+` means more than nine, `!` means GitHub could not be reached.
 - Click the icon for the list. An entry opens that issue in the browser. *Check now* skips the wait.
 - The bar under *Check every* sets how often: 5, 10, 15 or 30 minutes, 1, 2, 4 or 8 hours.
+- *Review issues with Claude* runs Claude Code once for every issue it has not reviewed yet, inside your local clone of that repository and with read-only tools. Claude decides whether the issue needs you; if it does, a line with a one-sentence note goes into that repository's `.claude/acik.md` ledger. It uses the Claude Code installed and signed in on this machine, never an API key, warns if `claude` is missing, and asks once for the folder that holds your clones.
 - *Notify on new issues* is off by default. Turned on, only issues it has not seen before raise a notification.
 - *Hide the icon when there are no open issues* is off by default. Turned on, the icon shows for three minutes after the app starts, then stays hidden while the count is zero. Start `RepoWarden.exe` again for another three minutes.
 - *Start with Windows* is switched on at first launch and can be unticked. `--owner <name>` watches another account or organisation.
