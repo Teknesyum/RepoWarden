@@ -102,12 +102,12 @@ static class Gh
 
 class Uygulama : ApplicationContext
 {
-    public const string Ad = "RepoWarden", Surum = "1.6.0";
+    public const string Ad = "RepoWarden", Surum = "1.6.1";
     const string RunAnahtar = @"Software\Microsoft\Windows\CurrentVersion\Run";
     const string AyarAnahtar = @"Software\" + Ad;
     const string Depo = "https://github.com/Teknesyum/" + Ad;
     const string ClaudeArg = "-p --tools Read,Grep,Glob --setting-sources local --strict-mcp-config --no-session-persistence --model sonnet --output-format stream-json --verbose";
-    const int ClaudeSure = 600000, NotSinir = 300, VarsayilanDk = 60, AcilisSuresi = 180000, MenuSinir = 12, BaslikSinir = 48;
+    const int ClaudeSure = 600000, NotSinir = 300, GovdeSinir = 30000, VarsayilanDk = 60, AcilisSuresi = 180000, MenuSinir = 12, BaslikSinir = 48;
 
     static readonly int[] Adimlar = { 5, 10, 15, 30, 60, 120, 240, 480 };
 
@@ -318,11 +318,11 @@ class Uygulama : ApplicationContext
                 {
                     if (incelenen.Contains(so.Adres)) { onceki++; continue; }
                     string ad = so.Depo + " #" + so.No;
-                    string klasor = System.Text.RegularExpressions.Regex.IsMatch(so.Depo, "^[A-Za-z0-9_-][A-Za-z0-9._-]*$") ? Path.Combine(kok, so.Depo) : null;
-                    if (klasor == null || !Directory.Exists(Path.Combine(klasor, ".git"))) { klasorsuz++; Gunluk(ad, Dil.S("yerel klasör yok", "no local folder")); yaz(ad + "  " + Dil.S("yerel klasör yok, atlandı", "no local folder, skipped")); continue; }
+                    string klasor = KlasorBul(kok, so);
+                    if (klasor == null) { klasorsuz++; Gunluk(ad, Dil.S("yerel klasör yok", "no local folder")); yaz(ad + "  " + Dil.S("yerel klasör yok, atlandı", "no local folder, skipped")); continue; }
                     ui.Post(__ => DurumYaz(Dil.S("İnceleniyor: ", "Reviewing: ") + ad), null);
                     yaz("");
-                    yaz(ad + "  " + TekSatir(so.Baslik, NotSinir));
+                    yaz(ad + "  " + TekSatir(so.Baslik, NotSinir) + "  [" + Path.GetFileName(klasor) + "]");
                     yaz("  " + Dil.S("issue okunuyor", "reading the issue"));
                     string govde, yanit, sonuc = null;
                     if (Gh.Kos("issue view " + so.Adres + " --json title,body,author,comments", out govde) != 0) { basarisiz++; Gunluk(ad, Dil.S("issue okunamadı", "could not read the issue")); yaz("  " + Dil.S("issue okunamadı", "could not read the issue")); continue; }
@@ -404,7 +404,29 @@ class Uygulama : ApplicationContext
             + "- \"defter\": a real bug, request or question that needs the owner's attention.\n"
             + "- \"yok\": spam, empty, a test, nothing actionable, or already handled in the code.\n"
             + "Answer with one JSON object and nothing else: {\"karar\":\"defter\" or \"yok\",\"not\":\"one sentence, at most 200 characters, in " + Dil.S("Turkish", "English") + ": where the cause probably is and what to do, or why nothing is needed\"}\n"
-            + "<issue>\nrepository: " + so.Depo + "\nnumber: " + so.No + "\n" + govde.Replace("<", "\\u003c") + "\n</issue>\n";
+            + "<issue>\nrepository: " + so.Depo + "\nnumber: " + so.No + "\n" + Kirp(govde).Replace("<", "\\u003c") + "\n</issue>\n";
+    }
+
+    static string KlasorBul(string kok, Sorun so)
+    {
+        System.Text.RegularExpressions.Regex ad = new System.Text.RegularExpressions.Regex("^[A-Za-z0-9_-][A-Za-z0-9._-]*$");
+        List<string> adaylar = new List<string>();
+        int i = so.Baslik.IndexOf(':');
+        string on = i > 0 ? so.Baslik.Substring(0, i).Trim() : "";
+        if (ad.IsMatch(on))
+        {
+            adaylar.Add(on);
+            foreach (string d in Directory.GetDirectories(kok)) if (Path.GetFileName(d).EndsWith("-" + on, StringComparison.OrdinalIgnoreCase)) adaylar.Add(Path.GetFileName(d));
+        }
+        if (ad.IsMatch(so.Depo)) adaylar.Add(so.Depo);
+        foreach (string a in adaylar) if (Directory.Exists(Path.Combine(Path.Combine(kok, a), ".git"))) return Path.Combine(kok, a);
+        return null;
+    }
+
+    static string Kirp(string govde)
+    {
+        govde = System.Text.RegularExpressions.Regex.Replace(govde, @"[A-Za-z0-9+/=\\]{200,}", "[image]");
+        return govde.Length <= GovdeSinir ? govde : govde.Substring(0, GovdeSinir);
     }
 
     static string TekSatir(string s, int sinir)
