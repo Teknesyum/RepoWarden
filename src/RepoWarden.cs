@@ -22,6 +22,12 @@ class Sorun
     public int No;
 }
 
+class Defter
+{
+    public string Ad, Yol;
+    public int Say;
+}
+
 class Gorus
 {
     public Sorun So;
@@ -180,11 +186,18 @@ class Uygulama : ApplicationContext
         menu.Items.Clear();
         foreach (ToolStripItem o in eski) o.Dispose();
 
+        menu.Items.Add(new ToolStripMenuItem(Dil.S("Issue'ları Claude ile incele", "Review issues with Claude"), null, (s, e) => Incele()) { Enabled = sorunlar.Count > 0 || inceliyor, ToolTipText = Dil.S("Her yeni issue için Claude'u bir kez çalıştırır; gerekeni deponun defterine yazar", "Runs Claude once per new issue and writes what needs doing to the repository's ledger") });
         menu.Items.Add(new ToolStripMenuItem(Ad + " v" + Surum) { Enabled = false });
         menu.Items.Add(new ToolStripMenuItem(durum) { Enabled = false });
         menu.Items.Add(new ToolStripMenuItem(Dil.S("Şimdi denetle", "Check now"), null, (s, e) => Denetle()));
-        menu.Items.Add(new ToolStripMenuItem(Dil.S("Issue'ları Claude ile incele", "Review issues with Claude"), null, (s, e) => Incele()) { Enabled = sorunlar.Count > 0 || inceliyor, ToolTipText = Dil.S("Her yeni issue için Claude'u bir kez çalıştırır; gerekeni deponun defterine yazar", "Runs Claude once per new issue and writes what needs doing to the repository's ledger") });
-        if (File.Exists(gunlukYol)) menu.Items.Add(new ToolStripMenuItem(Dil.S("İnceleme kaydı", "Review log"), null, (s, e) => Git(gunlukYol)));
+        List<Defter> defterler = DefterTara(ProjeKok());
+        int defterde = defterler.Sum(x => x.Say);
+        if (defterde > 0)
+        {
+            ToolStripMenuItem dm = new ToolStripMenuItem(string.Format(Dil.S("Defterde bekleyen: {0} issue, {1} oturum", "Waiting in ledgers: {0} issues, {1} sessions"), defterde, defterler.Count));
+            foreach (Defter d in defterler) { string y = d.Yol; dm.DropDownItems.Add(new ToolStripMenuItem(d.Ad + "  " + d.Say, null, (s, e) => Git(y))); }
+            menu.Items.Add(dm);
+        }
         if (sorunlar.Count > 0)
         {
             menu.Items.Add(new ToolStripSeparator());
@@ -366,22 +379,19 @@ class Uygulama : ApplicationContext
                     bool gerek = Karar(sonuc ?? "", out not);
                     Gorus gr = new Gorus { So = so, Klasor = klasor, Not = not };
                     ui.Post(__ => { gorusler.Add(gr); if (pencere != null && !pencere.IsDisposed) pencere.GorusEkle(gr); }, null);
-                    string durum = Dil.S("deftere yazıldı", "written to the ledger");
-                    if (gerek) { DeftereYaz(klasor, so, not); yazildi++; }
-                    else
+                    string kapanis;
+                    string ek = gerek ? Dil.S("deftere yazıldı", "written to the ledger") : Dil.S("gerek yok", "nothing needed");
+                    if (gerek) DeftereYaz(klasor, so, not);
+                    string yorum = "RepoWarden: " + (gerek ? ek + (not.Length > 0 ? ": " + not : "") : (not.Length > 0 ? not : ek));
+                    if (Gh.Kos("issue close " + so.Adres + (gerek ? "" : " --reason \"not planned\"") + " --comment \"" + yorum.Replace("\\", "/").Replace("\"", "'") + "\"", out kapanis) != 0)
                     {
-                        string kapanis;
-                        string yorum = "RepoWarden: " + (not.Length > 0 ? not : Dil.S("gerek yok", "nothing needed"));
-                        if (Gh.Kos("issue close " + so.Adres + " --reason \"not planned\" --comment \"" + yorum.Replace("\\", "/").Replace("\"", "'") + "\"", out kapanis) != 0)
-                        {
-                            basarisiz++;
-                            Gunluk(ad, Dil.S("gerek yok, kapatılamadı", "nothing needed, could not close") + (not.Length > 0 ? ": " + not : ""));
-                            yaz("  → " + Dil.S("gerek yok, kapatılamadı", "nothing needed, could not close") + (not.Length > 0 ? ": " + not : ""));
-                            continue;
-                        }
-                        gereksiz++;
-                        durum = Dil.S("gerek yok, kapatıldı", "nothing needed, closed");
+                        basarisiz++;
+                        Gunluk(ad, ek + ", " + Dil.S("kapatılamadı", "could not close") + (not.Length > 0 ? ": " + not : ""));
+                        yaz("  → " + ek + ", " + Dil.S("kapatılamadı", "could not close") + (not.Length > 0 ? ": " + not : ""));
+                        continue;
                     }
+                    if (gerek) yazildi++; else gereksiz++;
+                    string durum = ek + ", " + Dil.S("kapatıldı", "closed");
                     yaz("  → " + durum + (not.Length > 0 ? ": " + not : ""));
                     Gunluk(ad, durum + (not.Length > 0 ? ": " + not : ""));
                     incelenen.Add(so.Adres);
@@ -393,11 +403,12 @@ class Uygulama : ApplicationContext
                 : claudeYok ? Dil.S("Bu sistemde Claude Code kurulu olmalı: komut satırında claude bulunamadı", "Claude Code must be installed on this system: claude was not found on the command line")
                 : yazildi + gereksiz + klasorsuz + basarisiz == 0
                 ? Dil.S("İncelenecek yeni issue yok", "No new issues to review")
-                : string.Format(Dil.S("{0} deftere yazıldı, {1} kapatıldı, {2} yerel klasör yok, {3} başarısız", "{0} written to the ledger, {1} closed, {2} no local folder, {3} failed"), yazildi, gereksiz, klasorsuz, basarisiz);
+                : string.Format(Dil.S("{0} deftere yazılıp kapatıldı, {1} gereksiz diye kapatıldı, {2} yerel klasör yok, {3} başarısız", "{0} written to the ledger and closed, {1} closed as not needed, {2} no local folder, {3} failed"), yazildi, gereksiz, klasorsuz, basarisiz);
             ui.Post(__ =>
             {
                 inceliyor = false;
                 if (tekSefer) { Kapat(); return; }
+                MenuKur();
                 Izle("");
                 if (onceki > 0) Izle(string.Format(Dil.S("{0} issue daha önce incelenmişti", "{0} issues were reviewed before"), onceki));
                 Izle(ozet);
@@ -411,6 +422,22 @@ class Uygulama : ApplicationContext
 
     readonly List<Gorus> gorusler = new List<Gorus>();
     bool soruyor;
+
+    static List<Defter> DefterTara(string kok)
+    {
+        List<Defter> l = new List<Defter>();
+        if (kok == null || !Directory.Exists(kok)) return l;
+        foreach (string d in Directory.GetDirectories(kok))
+        {
+            string yol = Path.Combine(Path.Combine(d, ".claude"), "acik.md");
+            if (!File.Exists(yol)) continue;
+            int n = 0;
+            try { foreach (string satir in File.ReadAllLines(yol)) if (satir.StartsWith("- [ ] Issue #")) n++; } catch { continue; }
+            if (n > 0) l.Add(new Defter { Ad = Path.GetFileName(d), Yol = yol, Say = n });
+        }
+        l.Sort((a, b) => b.Say.CompareTo(a.Say));
+        return l;
+    }
 
     void Sor(Gorus g, string q)
     {
