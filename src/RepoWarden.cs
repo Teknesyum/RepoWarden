@@ -122,7 +122,7 @@ static class Gh
 
 class Uygulama : ApplicationContext
 {
-    public const string Ad = "RepoWarden", Surum = "1.7.0";
+    public const string Ad = "RepoWarden", Surum = "1.7.1";
     const string RunAnahtar = @"Software\Microsoft\Windows\CurrentVersion\Run";
     const string AyarAnahtar = @"Software\" + Ad;
     const string Depo = "https://github.com/Teknesyum/" + Ad;
@@ -162,7 +162,7 @@ class Uygulama : ApplicationContext
         using (Stream k = typeof(Uygulama).Assembly.GetManifestResourceStream("icon.png")) temel = new Bitmap(k);
 
         MenuTemasi.Uygula(menu);
-        menu.Closed += (s, e) => { KartKapat(); if (bekleyen) MenuKur(); Gorunurluk(); };
+        menu.Closed += (s, e) => { if (bekleyen) MenuKur(); Gorunurluk(); };
         MenuKur();
         tepsi.ContextMenuStrip = menu;
         tepsi.Text = Ad + ": " + durum;
@@ -521,34 +521,35 @@ class Uygulama : ApplicationContext
         ToolStripMenuItem m = new ToolStripMenuItem(metin, null, (s, e) => Git(adres));
         MenuTemasi.Uygula((ToolStripDropDownMenu)m.DropDown);
         m.DropDownItems.Add(new ToolStripMenuItem(Dil.S("Tarayıcıda aç", "Open in browser"), null, (s, e) => Git(adres)));
-        ToolStripMenuItem dty = new ToolStripMenuItem(Dil.S("Detayları görüntüle", "View details"), null, (s, e) => { KartKapat(); Detay(so); });
-        dty.MouseEnter += (s, e) => KartAc(so, dty);
-        dty.MouseLeave += (s, e) => KartKapat();
+        ToolStripMenuItem dty = new ToolStripMenuItem(Dil.S("Detayları görüntüle", "View details"), null, (s, e) => Detay(so));
+        ToolStripDropDownMenu dd = (ToolStripDropDownMenu)dty.DropDown;
+        MenuTemasi.Uygula(dd);
+        dd.Padding = Padding.Empty;
+        Kart kart = new Kart();
+        KartVeri kv;
+        kartlar.TryGetValue(so.Adres, out kv);
+        kart.Doldur(so, kv);
+        ToolStripControlHost host = new ToolStripControlHost(kart) { Margin = Padding.Empty, Padding = Padding.Empty, AutoSize = false, Size = kart.Size };
+        dd.Items.Add(host);
+        dty.DropDownOpening += (s, e) =>
+        {
+            if (kartlar.ContainsKey(so.Adres)) return;
+            ThreadPool.QueueUserWorkItem(_ =>
+            {
+                KartVeri n = KartOku(so);
+                ui.Post(__ => { if (n == null) return; kartlar[so.Adres] = n; kart.Doldur(so, n); host.Size = kart.Size; dd.PerformLayout(); }, null);
+            });
+        };
         m.DropDownItems.Add(dty);
         m.DropDownItems.Add(new ToolStripMenuItem(Dil.S("RepoWarden ile çöz", "Solve with RepoWarden"), null, (s, e) => Coz(so, klasor)));
         return m;
     }
 
-    Kart kart;
-    string kartAdres;
     readonly Dictionary<string, KartVeri> kartlar = new Dictionary<string, KartVeri>();
 
-    void KartKapat()
+    static KartVeri KartOku(Sorun so)
     {
-        kartAdres = null;
-        if (kart != null && !kart.IsDisposed) kart.Hide();
-    }
-
-    void KartAc(Sorun so, ToolStripItem it)
-    {
-        kartAdres = so.Adres;
-        KartVeri v;
-        if (!kartlar.TryGetValue(so.Adres, out v)) v = null;
-        KartGoster(so, v, it);
-        if (v != null) return;
-        ThreadPool.QueueUserWorkItem(_ =>
-        {
-            KartVeri n = null;
+        KartVeri n = null;
             string json;
             if (Gh.Kos("issue view " + so.Adres + " --json title,body,author,comments,labels,createdAt,state", out json) == 0)
             {
@@ -571,24 +572,7 @@ class Uygulama : ApplicationContext
                 }
                 catch { n = null; }
             }
-            ui.Post(__ =>
-            {
-                if (n != null) kartlar[so.Adres] = n;
-                if (kartAdres == so.Adres && n != null) KartGoster(so, n, it);
-            }, null);
-        });
-    }
-
-    void KartGoster(Sorun so, KartVeri v, ToolStripItem it)
-    {
-        if (kart == null || kart.IsDisposed) kart = new Kart();
-        kart.Doldur(so, v);
-        Rectangle ek = Screen.FromPoint(Cursor.Position).WorkingArea;
-        Rectangle ob = it.Owner.Bounds;
-        int x = ob.Right + 4;
-        if (x + kart.Width > ek.Right) x = Math.Max(ek.Left, ob.Left - kart.Width - 4);
-        int y = Math.Max(ek.Top, Math.Min(Cursor.Position.Y - 20, ek.Bottom - kart.Height));
-        kart.Konum(x, y);
+        return n;
     }
 
     static List<Defter> DefterTara(string kok)
@@ -889,14 +873,11 @@ class Uygulama : ApplicationContext
         {
             k.Doldur(new Sorun { Depo = "Teknesyum-UI", No = 6, Baslik = "Standard: In-App Guide (Hold Right Ctrl Help, First-Run Hint, Green Path)", Adres = "", Not = Dil.S("Sahibin kendi önerisi: rehber standardı; scaffold.js rehber şablonu ve üç tarayıcı kuralı eklenmeli, karar sahibinde.", "The owner's own proposal: a guide standard; scaffold.js needs a guide template and three scanner rules.") },
                 new KartVeri { Yazar = "Teknesyum", Tarih = "26 Eki 2026", Durum = "OPEN", Yorum = 2, Etiket = "standard", Govde = "Hold the right Ctrl key to show help on any screen.\n\nA first-run hint band points at the green path once, then never again." });
-            k.Konum(40, 40);
-            Application.DoEvents();
             using (Bitmap b = new Bitmap(k.Width, k.Height))
             {
                 k.DrawToBitmap(b, new Rectangle(0, 0, k.Width, k.Height));
                 b.Save(Path.Combine(goruntu, "kart.png"));
             }
-            k.Hide();
         }
         int altNo = 0;
         foreach (ToolStripMenuItem mi in menu.Items.OfType<ToolStripMenuItem>().Where(o => o.DropDownItems.Count > 0).ToList())
@@ -1073,7 +1054,7 @@ class Cubuk : Control
     }
 }
 
-class Kart : Form
+class Kart : Control
 {
     Sorun so;
     KartVeri v;
@@ -1082,10 +1063,6 @@ class Kart : Form
 
     public Kart()
     {
-        FormBorderStyle = FormBorderStyle.None;
-        ShowInTaskbar = false;
-        StartPosition = FormStartPosition.Manual;
-        TopMost = true;
         DoubleBuffered = true;
         BackColor = Tema.Surface;
         float o = Tema.Olcek;
@@ -1096,27 +1073,14 @@ class Kart : Form
         fsb = new Font(fs, FontStyle.Bold);
     }
 
-    protected override bool ShowWithoutActivation { get { return true; } }
-
-    protected override CreateParams CreateParams
-    {
-        get { CreateParams cp = base.CreateParams; cp.ExStyle |= 0x08000000 | 0x80; return cp; }
-    }
-
     public void Doldur(Sorun s, KartVeri d)
     {
         so = s;
         v = d;
         using (Bitmap b = new Bitmap(1, 1))
         using (Graphics g = Graphics.FromImage(b))
-            ClientSize = new Size((int)(440 * Tema.Olcek), Duzen(g, false));
+            Size = new Size((int)(440 * Tema.Olcek), Duzen(g, false));
         Invalidate();
-    }
-
-    public void Konum(int x, int y)
-    {
-        Location = new Point(x, y);
-        if (!Visible) Show();
     }
 
     int Yaz(Graphics g, bool ciz, string t, Font f, Color c, int x, int y, int w, int satir)
