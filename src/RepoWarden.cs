@@ -309,7 +309,7 @@ class Uygulama : ApplicationContext
         ThreadPool.QueueUserWorkItem(_ =>
         {
             int yazildi = 0, gereksiz = 0, klasorsuz = 0, basarisiz = 0, onceki = 0;
-            bool claudeYok = false;
+            bool claudeYok = false, oturumYok = false;
             try
             {
                 HashSet<string> incelenen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
@@ -352,6 +352,7 @@ class Uygulama : ApplicationContext
                     };
                     int kod = Surec.Kos("claude", ClaudeArg, klasor, Istem(so, govde), ClaudeSure, dinle, out yanit);
                     if (kod == Surec.Yok) { claudeYok = true; basarisiz++; Gunluk(ad, Dil.S("Claude Code (claude) bulunamadı", "Claude Code (claude) not found")); yaz("  " + Dil.S("Claude Code (claude) bulunamadı", "Claude Code (claude) not found")); break; }
+                    if (kod != 0 && (yanit.Contains("Failed to authenticate") || yanit.Contains("OAuth session expired") || yanit.Contains("Invalid API key"))) { oturumYok = true; basarisiz++; Gunluk(ad, Dil.S("Claude oturumu açık değil", "Claude is not signed in")); yaz("  " + Dil.S("Claude oturumu açık değil: terminalde claude yazıp /login ile giriş yap", "Claude is not signed in: run claude in a terminal and sign in with /login")); break; }
                     if (kod != 0) { basarisiz++; Gunluk(ad, Dil.S("Claude yanıt vermedi", "Claude did not answer") + " (" + kod + ")"); yaz("  " + Dil.S("Claude yanıt vermedi", "Claude did not answer") + " (" + kod + ")"); continue; }
                     string not;
                     bool gerek = Karar(sonuc ?? "", out not);
@@ -378,7 +379,8 @@ class Uygulama : ApplicationContext
                 }
             }
             catch (Exception e) { basarisiz++; Gunluk("-", e.Message); yaz(e.Message); }
-            string ozet = claudeYok ? Dil.S("Bu sistemde Claude Code kurulu olmalı: komut satırında claude bulunamadı", "Claude Code must be installed on this system: claude was not found on the command line")
+            string ozet = oturumYok ? Dil.S("Claude oturumu süresi dolmuş: terminalde claude yazıp /login ile giriş yap", "The Claude session has expired: run claude in a terminal and sign in with /login")
+                : claudeYok ? Dil.S("Bu sistemde Claude Code kurulu olmalı: komut satırında claude bulunamadı", "Claude Code must be installed on this system: claude was not found on the command line")
                 : yazildi + gereksiz + klasorsuz + basarisiz == 0
                 ? Dil.S("İncelenecek yeni issue yok", "No new issues to review")
                 : string.Format(Dil.S("{0} deftere yazıldı, {1} kapatıldı, {2} yerel klasör yok, {3} başarısız", "{0} written to the ledger, {1} closed, {2} no local folder, {3} failed"), yazildi, gereksiz, klasorsuz, basarisiz);
@@ -392,7 +394,7 @@ class Uygulama : ApplicationContext
                 DurumYaz(ozet + " · " + DateTime.Now.ToString("HH:mm"));
                 balonAdres = gunlukYol;
                 tepsi.Visible = true;
-                tepsi.ShowBalloonTip(10000, claudeYok ? Dil.S("Claude Code gerekli", "Claude Code is required") : Dil.S("İnceleme bitti", "Review finished"), ozet, claudeYok ? ToolTipIcon.Warning : ToolTipIcon.Info);
+                tepsi.ShowBalloonTip(10000, oturumYok ? Dil.S("Claude girişi gerekli", "Claude sign-in required") : claudeYok ? Dil.S("Claude Code gerekli", "Claude Code is required") : Dil.S("İnceleme bitti", "Review finished"), ozet, claudeYok || oturumYok ? ToolTipIcon.Warning : ToolTipIcon.Info);
             }, null);
         });
     }
