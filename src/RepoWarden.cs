@@ -122,7 +122,7 @@ static class Gh
 
 class Uygulama : ApplicationContext
 {
-    public const string Ad = "RepoWarden", Surum = "1.7.1";
+    public const string Ad = "RepoWarden", Surum = "1.7.2";
     const string RunAnahtar = @"Software\Microsoft\Windows\CurrentVersion\Run";
     const string AyarAnahtar = @"Software\" + Ad;
     const string Depo = "https://github.com/Teknesyum/" + Ad;
@@ -568,7 +568,7 @@ class Uygulama : ApplicationContext
                     string g = Convert.ToString(d["body"]).Replace("\r\n", "\n");
                     g = System.Text.RegularExpressions.Regex.Replace(g, @"[`*]|^#+\s*", "", System.Text.RegularExpressions.RegexOptions.Multiline);
                     g = System.Text.RegularExpressions.Regex.Replace(g, @"\n{3,}", "\n\n").Trim();
-                    n.Govde = g.Length > 700 ? g.Substring(0, 700) : g;
+                    n.Govde = g.Length > 4000 ? g.Substring(0, 4000) + "…" : g;
                 }
                 catch { n = null; }
             }
@@ -1128,7 +1128,9 @@ class Kart : Control
         if (ciz) using (Pen p = new Pen(Tema.BorderDecorative)) g.DrawLine(p, x, y, x + w, y);
         y += bosluk;
         string govde = v == null ? Dil.S("Yükleniyor…", "Loading…") : v.Govde.Length == 0 ? Dil.S("(açıklama yok)", "(no description)") : v.Govde;
-        y += Yaz(g, ciz, govde, fk, v == null || v.Govde.Length == 0 ? Tema.TextMuted : Tema.TextBody, x, y, w, 9);
+        int nrez = string.IsNullOrEmpty(so.Not) ? 0 : (int)(130 * o);
+        int satir = Math.Max(9, (int)((Screen.PrimaryScreen.WorkingArea.Height * 0.85 - y - pad - nrez) / fk.Height));
+        y += Yaz(g, ciz, govde, fk, v == null || v.Govde.Length == 0 ? Tema.TextMuted : Tema.TextBody, x, y, w, satir);
         if (!string.IsNullOrEmpty(so.Not))
         {
             y += bosluk + bosluk / 2;
