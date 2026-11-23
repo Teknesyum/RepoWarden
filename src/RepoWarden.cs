@@ -122,7 +122,7 @@ static class Gh
 
 class Uygulama : ApplicationContext
 {
-    public const string Ad = "RepoWarden", Surum = "1.7.3";
+    public const string Ad = "RepoWarden", Surum = "1.7.4";
     const string RunAnahtar = @"Software\Microsoft\Windows\CurrentVersion\Run";
     const string AyarAnahtar = @"Software\" + Ad;
     const string Depo = "https://github.com/Teknesyum/" + Ad;
@@ -520,7 +520,6 @@ class Uygulama : ApplicationContext
         string adres = so.Adres;
         ToolStripMenuItem m = new ToolStripMenuItem(metin, null, (s, e) => Git(adres));
         MenuTemasi.Uygula((ToolStripDropDownMenu)m.DropDown);
-        m.DropDownItems.Add(new ToolStripMenuItem(Dil.S("Tarayıcıda aç", "Open in browser"), null, (s, e) => Git(adres)));
         ToolStripMenuItem dty = new ToolStripMenuItem(Dil.S("Detayları görüntüle", "View details"), null, (s, e) => Detay(so));
         ToolStripDropDownMenu dd = (ToolStripDropDownMenu)dty.DropDown;
         MenuTemasi.Uygula(dd);
@@ -541,6 +540,7 @@ class Uygulama : ApplicationContext
             });
         };
         m.DropDownItems.Add(dty);
+        m.DropDownItems.Add(new ToolStripMenuItem(Dil.S("Tarayıcıda aç", "Open in browser"), null, (s, e) => Git(adres)));
         m.DropDownItems.Add(new ToolStripMenuItem(Dil.S("RepoWarden ile çöz", "Solve with RepoWarden"), null, (s, e) => Coz(so, klasor)));
         return m;
     }
