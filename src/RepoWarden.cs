@@ -122,7 +122,7 @@ static class Gh
 
 class Uygulama : ApplicationContext
 {
-    public const string Ad = "RepoWarden", Surum = "1.7.2";
+    public const string Ad = "RepoWarden", Surum = "1.7.3";
     const string RunAnahtar = @"Software\Microsoft\Windows\CurrentVersion\Run";
     const string AyarAnahtar = @"Software\" + Ad;
     const string Depo = "https://github.com/Teknesyum/" + Ad;
@@ -1079,7 +1079,7 @@ class Kart : Control
         v = d;
         using (Bitmap b = new Bitmap(1, 1))
         using (Graphics g = Graphics.FromImage(b))
-            Size = new Size((int)(440 * Tema.Olcek), Duzen(g, false));
+            Size = new Size((int)(560 * Tema.Olcek), Duzen(g, false));
         Invalidate();
     }
 
@@ -1101,7 +1101,7 @@ class Kart : Control
     int Duzen(Graphics g, bool ciz)
     {
         float o = Tema.Olcek;
-        int pad = (int)(16 * o), serit = (int)(4 * o), x = serit + pad, w = (int)(440 * o) - x - pad, bosluk = (int)(8 * o);
+        int pad = (int)(18 * o), x = pad, w = (int)(560 * o) - x - pad, bosluk = (int)(8 * o);
         int y = pad;
         Size cs = TextRenderer.MeasureText(g, so.Depo + " #" + so.No, fsb, new Size(w, int.MaxValue), Bayrak);
         if (ciz) TextRenderer.DrawText(g, so.Depo + " #" + so.No, fsb, new Rectangle(x, y, cs.Width + 2, cs.Height), Tema.Renk1, Bayrak);
@@ -1151,8 +1151,6 @@ class Kart : Control
     protected override void OnPaint(PaintEventArgs e)
     {
         e.Graphics.Clear(Tema.Surface);
-        using (SolidBrush b = new SolidBrush(Tema.Renk1)) e.Graphics.FillRectangle(b, 0, 0, (int)(4 * Tema.Olcek), Height);
-        using (Pen p = new Pen(Tema.BorderStrong)) e.Graphics.DrawRectangle(p, 0, 0, Width - 1, Height - 1);
         if (so != null) Duzen(e.Graphics, true);
     }
 }
