@@ -18,14 +18,21 @@ using Microsoft.Win32;
 
 class Sorun
 {
-    public string Depo, Baslik, Adres;
+    public string Depo, Baslik, Adres, Not;
     public int No;
 }
 
 class Defter
 {
-    public string Ad, Yol;
+    public string Ad, Yol, Klasor;
     public int Say;
+    public List<Sorun> Satirlar = new List<Sorun>();
+}
+
+class KartVeri
+{
+    public string Yazar = "", Tarih = "", Durum = "", Etiket = "", Govde = "";
+    public int Yorum;
 }
 
 class Gorus
@@ -155,7 +162,7 @@ class Uygulama : ApplicationContext
         using (Stream k = typeof(Uygulama).Assembly.GetManifestResourceStream("icon.png")) temel = new Bitmap(k);
 
         MenuTemasi.Uygula(menu);
-        menu.Closed += (s, e) => { if (bekleyen) MenuKur(); Gorunurluk(); };
+        menu.Closed += (s, e) => { KartKapat(); if (bekleyen) MenuKur(); Gorunurluk(); };
         MenuKur();
         tepsi.ContextMenuStrip = menu;
         tepsi.Text = Ad + ": " + durum;
@@ -186,33 +193,29 @@ class Uygulama : ApplicationContext
         menu.Items.Clear();
         foreach (ToolStripItem o in eski) o.Dispose();
 
+        ToolStripMenuItem baslik = new ToolStripMenuItem(Ad + " v" + Surum) { Enabled = false, ForeColor = Tema.Renk1 };
+        baslik.Font = new Font(menu.Font, FontStyle.Bold);
+        menu.Items.Add(baslik);
         menu.Items.Add(new ToolStripMenuItem(Dil.S("Issue'ları Claude ile incele", "Review issues with Claude"), null, (s, e) => Incele()) { Enabled = sorunlar.Count > 0 || inceliyor, ToolTipText = Dil.S("Her yeni issue için Claude'u bir kez çalıştırır; gerekeni deponun defterine yazar", "Runs Claude once per new issue and writes what needs doing to the repository's ledger") });
-        menu.Items.Add(new ToolStripMenuItem(Ad + " v" + Surum) { Enabled = false });
         menu.Items.Add(new ToolStripMenuItem(durum) { Enabled = false });
-        menu.Items.Add(new ToolStripMenuItem(Dil.S("Şimdi denetle", "Check now"), null, (s, e) => Denetle()));
         List<Defter> defterler = DefterTara(ProjeKok());
         int defterde = defterler.Sum(x => x.Say);
         if (defterde > 0)
         {
             ToolStripMenuItem dm = new ToolStripMenuItem(string.Format(Dil.S("Defterde bekleyen: {0} issue, {1} oturum", "Waiting in ledgers: {0} issues, {1} sessions"), defterde, defterler.Count));
-            foreach (Defter d in defterler) { string y = d.Yol; dm.DropDownItems.Add(new ToolStripMenuItem(d.Ad + "  " + d.Say, null, (s, e) => Git(y))); }
             MenuTemasi.Uygula((ToolStripDropDownMenu)dm.DropDown);
+            foreach (Defter d in defterler)
+            {
+                string y = d.Yol;
+                dm.DropDownItems.Add(new ToolStripMenuItem(d.Ad + "  " + d.Say, null, (s, e) => Git(y)) { ForeColor = Tema.Renk1, ToolTipText = Dil.S("Defteri aç", "Open the ledger") });
+                foreach (Sorun so in d.Satirlar) dm.DropDownItems.Add(IssueMenusu(so, d.Klasor, "   #" + so.No + "  " + Kisalt(so.Baslik)));
+            }
             menu.Items.Add(dm);
         }
         if (sorunlar.Count > 0)
         {
             menu.Items.Add(new ToolStripSeparator());
-            foreach (Sorun so in sorunlar.Take(MenuSinir))
-            {
-                string adres = so.Adres;
-                Sorun sn = so;
-                ToolStripMenuItem m = new ToolStripMenuItem(so.Depo + " #" + so.No + "  " + Kisalt(so.Baslik), null, (s, e) => Git(adres)) { ToolTipText = so.Baslik };
-                MenuTemasi.Uygula((ToolStripDropDownMenu)m.DropDown);
-                m.DropDownItems.Add(new ToolStripMenuItem(Dil.S("Tarayıcıda aç", "Open in browser"), null, (s, e) => Git(adres)));
-                m.DropDownItems.Add(new ToolStripMenuItem(Dil.S("Detayları görüntüle", "View details"), null, (s, e) => Detay(sn)));
-                m.DropDownItems.Add(new ToolStripMenuItem(Dil.S("RepoWarden ile çöz", "Solve with RepoWarden"), null, (s, e) => Coz(sn)));
-                menu.Items.Add(m);
-            }
+            foreach (Sorun so in sorunlar.Take(MenuSinir)) menu.Items.Add(IssueMenusu(so, null, so.Depo + " #" + so.No + "  " + Kisalt(so.Baslik)));
             if (sorunlar.Count > MenuSinir)
                 menu.Items.Add(new ToolStripMenuItem(string.Format(Dil.S("… {0} tane daha", "… {0} more"), sorunlar.Count - MenuSinir), null, (s, e) => Git(HepsiAdres())));
         }
@@ -230,6 +233,7 @@ class Uygulama : ApplicationContext
             saat.Interval = dk * 60000;
             siklik.Text = SiklikYazi(dk);
         };
+        menu.Items.Add(new ToolStripMenuItem(Dil.S("Şimdi denetle", "Check now"), null, (s, e) => Denetle()));
         menu.Items.Add(siklik);
         menu.Items.Add(new ToolStripControlHost(cubuk) { AutoSize = false, Size = cubuk.Size, BackColor = Tema.Surface });
         menu.Items.Add(bildirim);
@@ -331,6 +335,11 @@ class Uygulama : ApplicationContext
         MenuKur();
         akis.Clear();
         if (pencere != null && !pencere.IsDisposed) pencere.Close();
+        foreach (Sorun so in liste)
+        {
+            string kl = KlasorBul(kok, so);
+            if (kl != null && !gorusler.Any(x => x.So.Adres == so.Adres)) gorusler.Add(new Gorus { So = so, Klasor = kl, Not = so.Not ?? "" });
+        }
         PencereAc();
         Izle(string.Format(Dil.S("İnceleme başladı: {0} açık issue", "Review started: {0} open issues"), liste.Count));
         Action<string> yaz = s => ui.Post(__ => Izle(s), null);
@@ -344,7 +353,25 @@ class Uygulama : ApplicationContext
                 try { if (File.Exists(incelenenYol)) foreach (string s in File.ReadAllLines(incelenenYol)) incelenen.Add(s); } catch { }
                 foreach (Sorun so in liste)
                 {
-                    if (incelenen.Contains(so.Adres)) { onceki++; continue; }
+                    if (incelenen.Contains(so.Adres))
+                    {
+                        onceki++;
+                        string kl = KlasorBul(kok, so);
+                        string dy = kl == null ? null : Path.Combine(Path.Combine(kl, ".claude"), "acik.md");
+                        if (dy != null && File.Exists(dy) && File.ReadAllText(dy).Contains(so.Adres))
+                        {
+                            string kap, ad0 = so.Depo + " #" + so.No;
+                            if (Gh.Kos("issue close " + so.Adres + " --comment \"RepoWarden: " + Dil.S("deftere yazılmıştı", "already written to the ledger") + "\"", out kap) == 0)
+                            {
+                                yazildi++;
+                                Gunluk(ad0, Dil.S("önceden deftere yazılmıştı, kapatıldı", "was already in the ledger, closed"));
+                                yaz("");
+                                yaz(ad0 + "  " + Dil.S("önceden deftere yazılmıştı, kapatıldı", "was already in the ledger, closed"));
+                            }
+                            else { basarisiz++; Gunluk(ad0, Dil.S("kapatılamadı", "could not close")); yaz(ad0 + "  " + Dil.S("kapatılamadı", "could not close")); }
+                        }
+                        continue;
+                    }
                     string ad = so.Depo + " #" + so.No;
                     string klasor = KlasorBul(kok, so);
                     if (klasor == null) { klasorsuz++; Gunluk(ad, Dil.S("yerel klasör yok", "no local folder")); yaz(ad + "  " + Dil.S("yerel klasör yok, atlandı", "no local folder, skipped")); continue; }
@@ -385,7 +412,7 @@ class Uygulama : ApplicationContext
                     string not;
                     bool gerek = Karar(sonuc ?? "", out not);
                     Gorus gr = new Gorus { So = so, Klasor = klasor, Not = not };
-                    ui.Post(__ => { gorusler.Add(gr); if (pencere != null && !pencere.IsDisposed) pencere.GorusEkle(gr); }, null);
+                    ui.Post(__ => { Gorus eski = gorusler.FirstOrDefault(x => x.So.Adres == gr.So.Adres); if (eski != null) eski.Not = gr.Not; else { gorusler.Add(gr); if (pencere != null && !pencere.IsDisposed) pencere.GorusEkle(gr); } }, null);
                     string kapanis;
                     string ek = gerek ? Dil.S("deftere yazıldı", "written to the ledger") : Dil.S("gerek yok", "nothing needed");
                     if (gerek) DeftereYaz(klasor, so, not);
@@ -430,10 +457,10 @@ class Uygulama : ApplicationContext
     readonly List<Gorus> gorusler = new List<Gorus>();
     bool soruyor;
 
-    void Coz(Sorun so)
+    void Coz(Sorun so, string klasor)
     {
         string kok = ProjeKok();
-        string klasor = kok != null && Directory.Exists(kok) ? KlasorBul(kok, so) : null;
+        if (klasor == null) klasor = kok != null && Directory.Exists(kok) ? KlasorBul(kok, so) : null;
         if (klasor == null)
         {
             tepsi.ShowBalloonTip(8000, Ad, Dil.S("Bu issue'nun yerel klasörü bulunamadı; önce Issue'ları Claude ile incele ile klasörü seç", "The local folder of this issue was not found; pick it first with Review issues with Claude"), ToolTipIcon.Warning);
@@ -481,6 +508,89 @@ class Uygulama : ApplicationContext
         return a != null && a.ContainsKey("login") ? Convert.ToString(a["login"]) : "";
     }
 
+    static Sorun SatirSorun(string satir)
+    {
+        System.Text.RegularExpressions.Match m = System.Text.RegularExpressions.Regex.Match(satir, @"^- \[ \] Issue #(\d+): (.*?) — \d{4}-\d{2}-\d{2} \d{2}:\d{2} — (.*?)\s*(https://github\.com/[^/\s]+/([^/\s]+)/issues/\d+)\s*$");
+        if (!m.Success) return null;
+        return new Sorun { No = int.Parse(m.Groups[1].Value), Baslik = m.Groups[2].Value, Not = m.Groups[3].Value, Adres = m.Groups[4].Value, Depo = m.Groups[5].Value };
+    }
+
+    ToolStripMenuItem IssueMenusu(Sorun so, string klasor, string metin)
+    {
+        string adres = so.Adres;
+        ToolStripMenuItem m = new ToolStripMenuItem(metin, null, (s, e) => Git(adres));
+        MenuTemasi.Uygula((ToolStripDropDownMenu)m.DropDown);
+        m.DropDownItems.Add(new ToolStripMenuItem(Dil.S("Tarayıcıda aç", "Open in browser"), null, (s, e) => Git(adres)));
+        ToolStripMenuItem dty = new ToolStripMenuItem(Dil.S("Detayları görüntüle", "View details"), null, (s, e) => { KartKapat(); Detay(so); });
+        dty.MouseEnter += (s, e) => KartAc(so, dty);
+        dty.MouseLeave += (s, e) => KartKapat();
+        m.DropDownItems.Add(dty);
+        m.DropDownItems.Add(new ToolStripMenuItem(Dil.S("RepoWarden ile çöz", "Solve with RepoWarden"), null, (s, e) => Coz(so, klasor)));
+        return m;
+    }
+
+    Kart kart;
+    string kartAdres;
+    readonly Dictionary<string, KartVeri> kartlar = new Dictionary<string, KartVeri>();
+
+    void KartKapat()
+    {
+        kartAdres = null;
+        if (kart != null && !kart.IsDisposed) kart.Hide();
+    }
+
+    void KartAc(Sorun so, ToolStripItem it)
+    {
+        kartAdres = so.Adres;
+        KartVeri v;
+        if (!kartlar.TryGetValue(so.Adres, out v)) v = null;
+        KartGoster(so, v, it);
+        if (v != null) return;
+        ThreadPool.QueueUserWorkItem(_ =>
+        {
+            KartVeri n = null;
+            string json;
+            if (Gh.Kos("issue view " + so.Adres + " --json title,body,author,comments,labels,createdAt,state", out json) == 0)
+            {
+                try
+                {
+                    n = new KartVeri();
+                    Dictionary<string, object> d = (Dictionary<string, object>)new System.Web.Script.Serialization.JavaScriptSerializer().DeserializeObject(json);
+                    n.Yazar = Yazar(d);
+                    n.Durum = Convert.ToString(d["state"]);
+                    DateTime dt;
+                    if (DateTime.TryParse(Convert.ToString(d["createdAt"]), out dt)) n.Tarih = dt.ToLocalTime().ToString("d MMM yyyy");
+                    n.Yorum = ((object[])d["comments"]).Length;
+                    List<string> et = new List<string>();
+                    foreach (object o in (object[])d["labels"]) et.Add(Convert.ToString(((Dictionary<string, object>)o)["name"]));
+                    n.Etiket = string.Join(", ", et.ToArray());
+                    string g = Convert.ToString(d["body"]).Replace("\r\n", "\n");
+                    g = System.Text.RegularExpressions.Regex.Replace(g, @"[`*]|^#+\s*", "", System.Text.RegularExpressions.RegexOptions.Multiline);
+                    g = System.Text.RegularExpressions.Regex.Replace(g, @"\n{3,}", "\n\n").Trim();
+                    n.Govde = g.Length > 700 ? g.Substring(0, 700) : g;
+                }
+                catch { n = null; }
+            }
+            ui.Post(__ =>
+            {
+                if (n != null) kartlar[so.Adres] = n;
+                if (kartAdres == so.Adres && n != null) KartGoster(so, n, it);
+            }, null);
+        });
+    }
+
+    void KartGoster(Sorun so, KartVeri v, ToolStripItem it)
+    {
+        if (kart == null || kart.IsDisposed) kart = new Kart();
+        kart.Doldur(so, v);
+        Rectangle ek = Screen.FromPoint(Cursor.Position).WorkingArea;
+        Rectangle ob = it.Owner.Bounds;
+        int x = ob.Right + 4;
+        if (x + kart.Width > ek.Right) x = Math.Max(ek.Left, ob.Left - kart.Width - 4);
+        int y = Math.Max(ek.Top, Math.Min(Cursor.Position.Y - 20, ek.Bottom - kart.Height));
+        kart.Konum(x, y);
+    }
+
     static List<Defter> DefterTara(string kok)
     {
         List<Defter> l = new List<Defter>();
@@ -489,9 +599,18 @@ class Uygulama : ApplicationContext
         {
             string yol = Path.Combine(Path.Combine(d, ".claude"), "acik.md");
             if (!File.Exists(yol)) continue;
-            int n = 0;
-            try { foreach (string satir in File.ReadAllLines(yol)) if (satir.StartsWith("- [ ] Issue #")) n++; } catch { continue; }
-            if (n > 0) l.Add(new Defter { Ad = Path.GetFileName(d), Yol = yol, Say = n });
+            Defter df = new Defter { Ad = Path.GetFileName(d), Yol = yol, Klasor = d };
+            try
+            {
+                foreach (string satir in File.ReadAllLines(yol))
+                {
+                    Sorun so = SatirSorun(satir);
+                    if (so != null && !df.Satirlar.Any(x => x.Adres == so.Adres)) df.Satirlar.Add(so);
+                }
+            }
+            catch { continue; }
+            df.Say = df.Satirlar.Count;
+            if (df.Say > 0) l.Add(df);
         }
         l.Sort((a, b) => b.Say.CompareTo(a.Say));
         return l;
@@ -766,6 +885,19 @@ class Uygulama : ApplicationContext
             menu.DrawToBitmap(b, new Rectangle(0, 0, menu.Width, menu.Height));
             b.Save(Path.Combine(goruntu, "menu.png"));
         }
+        using (Kart k = new Kart())
+        {
+            k.Doldur(new Sorun { Depo = "Teknesyum-UI", No = 6, Baslik = "Standard: In-App Guide (Hold Right Ctrl Help, First-Run Hint, Green Path)", Adres = "", Not = Dil.S("Sahibin kendi önerisi: rehber standardı; scaffold.js rehber şablonu ve üç tarayıcı kuralı eklenmeli, karar sahibinde.", "The owner's own proposal: a guide standard; scaffold.js needs a guide template and three scanner rules.") },
+                new KartVeri { Yazar = "Teknesyum", Tarih = "26 Eki 2026", Durum = "OPEN", Yorum = 2, Etiket = "standard", Govde = "Hold the right Ctrl key to show help on any screen.\n\nA first-run hint band points at the green path once, then never again." });
+            k.Konum(40, 40);
+            Application.DoEvents();
+            using (Bitmap b = new Bitmap(k.Width, k.Height))
+            {
+                k.DrawToBitmap(b, new Rectangle(0, 0, k.Width, k.Height));
+                b.Save(Path.Combine(goruntu, "kart.png"));
+            }
+            k.Hide();
+        }
         int altNo = 0;
         foreach (ToolStripMenuItem mi in menu.Items.OfType<ToolStripMenuItem>().Where(o => o.DropDownItems.Count > 0).ToList())
         {
@@ -941,10 +1073,133 @@ class Cubuk : Control
     }
 }
 
+class Kart : Form
+{
+    Sorun so;
+    KartVeri v;
+    readonly Font fk, fb, fbaslik, fs, fsb;
+    const TextFormatFlags Bayrak = TextFormatFlags.WordBreak | TextFormatFlags.EndEllipsis | TextFormatFlags.NoPadding | TextFormatFlags.Left | TextFormatFlags.Top;
+
+    public Kart()
+    {
+        FormBorderStyle = FormBorderStyle.None;
+        ShowInTaskbar = false;
+        StartPosition = FormStartPosition.Manual;
+        TopMost = true;
+        DoubleBuffered = true;
+        BackColor = Tema.Surface;
+        float o = Tema.Olcek;
+        fk = Tema.Sans(Tema.FontSize2 * o);
+        fb = new Font(fk, FontStyle.Bold);
+        fbaslik = new Font(Tema.Sans(Tema.FontSize2 * 1.25f * o), FontStyle.Bold);
+        fs = Tema.Sans(Tema.FontSize2 * 0.85f * o);
+        fsb = new Font(fs, FontStyle.Bold);
+    }
+
+    protected override bool ShowWithoutActivation { get { return true; } }
+
+    protected override CreateParams CreateParams
+    {
+        get { CreateParams cp = base.CreateParams; cp.ExStyle |= 0x08000000 | 0x80; return cp; }
+    }
+
+    public void Doldur(Sorun s, KartVeri d)
+    {
+        so = s;
+        v = d;
+        using (Bitmap b = new Bitmap(1, 1))
+        using (Graphics g = Graphics.FromImage(b))
+            ClientSize = new Size((int)(440 * Tema.Olcek), Duzen(g, false));
+        Invalidate();
+    }
+
+    public void Konum(int x, int y)
+    {
+        Location = new Point(x, y);
+        if (!Visible) Show();
+    }
+
+    int Yaz(Graphics g, bool ciz, string t, Font f, Color c, int x, int y, int w, int satir)
+    {
+        Size sz = TextRenderer.MeasureText(g, t, f, new Size(w, int.MaxValue), Bayrak);
+        int h = Math.Min(sz.Height, f.Height * satir);
+        if (ciz) TextRenderer.DrawText(g, t, f, new Rectangle(x, y, w, h), c, Bayrak);
+        return h;
+    }
+
+    void Dolgu(Graphics g, Rectangle r)
+    {
+        g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
+        using (System.Drawing.Drawing2D.GraphicsPath p = Tema.Yuvarlak(r, Tema.Radius * Tema.Olcek))
+        using (SolidBrush b = new SolidBrush(Tema.Renk1Yuzde20)) g.FillPath(b, p);
+    }
+
+    int Duzen(Graphics g, bool ciz)
+    {
+        float o = Tema.Olcek;
+        int pad = (int)(16 * o), serit = (int)(4 * o), x = serit + pad, w = (int)(440 * o) - x - pad, bosluk = (int)(8 * o);
+        int y = pad;
+        Size cs = TextRenderer.MeasureText(g, so.Depo + " #" + so.No, fsb, new Size(w, int.MaxValue), Bayrak);
+        if (ciz) TextRenderer.DrawText(g, so.Depo + " #" + so.No, fsb, new Rectangle(x, y, cs.Width + 2, cs.Height), Tema.Renk1, Bayrak);
+        string st = v == null ? "" : v.Durum == "OPEN" ? Dil.S("AÇIK", "OPEN") : v.Durum == "CLOSED" ? Dil.S("KAPALI", "CLOSED") : v.Durum;
+        if (st.Length > 0 && ciz)
+        {
+            Size ss = TextRenderer.MeasureText(g, st, fsb, new Size(w, int.MaxValue), Bayrak);
+            int ic = (int)(8 * o);
+            Rectangle r = new Rectangle(x + w - ss.Width - 2 * ic, y - 2, ss.Width + 2 * ic, ss.Height + 4);
+            Dolgu(g, r);
+            TextRenderer.DrawText(g, st, fsb, new Rectangle(r.Left + ic, y, ss.Width + 2, ss.Height), Tema.Renk1, Bayrak);
+        }
+        y += fsb.Height + bosluk;
+        y += Yaz(g, ciz, so.Baslik, fbaslik, Tema.TextBody, x, y, w, 3) + bosluk / 2;
+        if (v != null)
+        {
+            List<string> meta = new List<string>();
+            if (v.Yazar.Length > 0) meta.Add(v.Yazar);
+            if (v.Tarih.Length > 0) meta.Add(v.Tarih);
+            if (v.Yorum > 0) meta.Add(v.Yorum + Dil.S(" yorum", v.Yorum == 1 ? " comment" : " comments"));
+            if (v.Etiket.Length > 0) meta.Add(v.Etiket);
+            y += Yaz(g, ciz, string.Join("  ·  ", meta.ToArray()), fs, Tema.TextMuted, x, y, w, 1) + bosluk;
+        }
+        if (ciz) using (Pen p = new Pen(Tema.BorderDecorative)) g.DrawLine(p, x, y, x + w, y);
+        y += bosluk;
+        string govde = v == null ? Dil.S("Yükleniyor…", "Loading…") : v.Govde.Length == 0 ? Dil.S("(açıklama yok)", "(no description)") : v.Govde;
+        y += Yaz(g, ciz, govde, fk, v == null || v.Govde.Length == 0 ? Tema.TextMuted : Tema.TextBody, x, y, w, 9);
+        if (!string.IsNullOrEmpty(so.Not))
+        {
+            y += bosluk + bosluk / 2;
+            int ic = (int)(10 * o);
+            int nh = Yaz(g, false, so.Not, fk, Tema.TextBody, x, y, w - 2 * ic, 3);
+            Rectangle kutu = new Rectangle(x - ic, y, w + 2 * ic, ic + fsb.Height + nh + ic);
+            if (ciz)
+            {
+                Dolgu(g, kutu);
+                TextRenderer.DrawText(g, "Claude", fsb, new Rectangle(x, y + ic, w, fsb.Height), Tema.Renk1, Bayrak);
+                Yaz(g, true, so.Not, fk, Tema.TextBody, x, y + ic + fsb.Height, w - 2 * ic, 3);
+            }
+            y += kutu.Height;
+        }
+        return y + pad;
+    }
+
+    protected override void OnPaint(PaintEventArgs e)
+    {
+        e.Graphics.Clear(Tema.Surface);
+        using (SolidBrush b = new SolidBrush(Tema.Renk1)) e.Graphics.FillRectangle(b, 0, 0, (int)(4 * Tema.Olcek), Height);
+        using (Pen p = new Pen(Tema.BorderStrong)) e.Graphics.DrawRectangle(p, 0, 0, Width - 1, Height - 1);
+        if (so != null) Duzen(e.Graphics, true);
+    }
+}
+
 class Izleme : Form
 {
     readonly TextBox kutu = new TextBox(), soru = new TextBox();
     readonly ComboBox secim = new ComboBox();
+
+    [DllImport("uxtheme.dll", CharSet = CharSet.Unicode)]
+    static extern int SetWindowTheme(IntPtr h, string app, string ids);
+
+    static bool Koyu { get { return Tema.Surface.GetBrightness() < 0.5f; } }
 
     public Izleme(IEnumerable<string> satirlar) : this(satirlar, null, null, null) { }
 
@@ -967,6 +1222,7 @@ class Izleme : Form
         kutu.Dock = DockStyle.Fill;
         kutu.BackColor = Tema.Surface;
         kutu.ForeColor = Tema.TextBody;
+        kutu.HandleCreated += (s, e) => SetWindowTheme(kutu.Handle, Koyu ? "DarkMode_Explorer" : "Explorer", null);
         Controls.Add(kutu);
         if (sor != null)
         {
@@ -979,6 +1235,7 @@ class Izleme : Form
             secim.BackColor = Tema.Surface;
             secim.ForeColor = Tema.TextBody;
             secim.Dock = DockStyle.Fill;
+            secim.HandleCreated += (s, e) => SetWindowTheme(secim.Handle, Koyu ? "DarkMode_CFD" : "Explorer", null);
             soru.Dock = DockStyle.Fill;
             soru.BackColor = Tema.Surface;
             soru.ForeColor = Tema.TextBody;
@@ -987,8 +1244,9 @@ class Izleme : Form
             Action<Action<Gorus, string>> gonder = f =>
             {
                 Gorus g = secim.SelectedItem as Gorus;
+                if (g == null) { Ekle("  " + Dil.S("Önce bir issue seç: listede yerel klasörü bulunan açık issue'lar durur", "Pick an issue first: the list holds open issues whose local folder was found")); return; }
                 string q = soru.Text.Trim();
-                if (g == null || q.Length == 0) return;
+                if (q.Length == 0) return;
                 soru.Clear();
                 f(g, q);
             };
@@ -1047,6 +1305,7 @@ static class Tema
     public static readonly Color Warning = Palette.Warning;
     public static readonly Color Surface = Palette.Surface;
     public static readonly Color TextBody = Palette.TextBody;
+    public static readonly Color TextMuted = Palette.TextMuted;
     public static readonly Color BorderStrong = Palette.BorderStrong;
     public static readonly Color BorderDecorative = Palette.BorderDecorative;
     public static readonly Color Renk1Yuzde20 = Ton.Renk1Yuzde20;
@@ -1110,7 +1369,7 @@ class MenuTemasi : ToolStripProfessionalRenderer
 
     protected override void OnRenderItemText(ToolStripItemTextRenderEventArgs e)
     {
-        TextRenderer.DrawText(e.Graphics, e.Text, e.TextFont, e.TextRectangle, e.Item.Enabled && !e.Item.Selected ? e.Item.ForeColor : Tema.TextBody, e.TextFormat);
+        TextRenderer.DrawText(e.Graphics, e.Text, e.TextFont, e.TextRectangle, !e.Item.Selected ? e.Item.ForeColor : Tema.TextBody, e.TextFormat);
     }
 
     protected override void OnRenderItemCheck(ToolStripItemImageRenderEventArgs e)
